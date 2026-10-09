@@ -5,7 +5,9 @@
 ## STRUCTURE
 ```
 scene/
-├── Scene.tsx              # Single Canvas owner; props: track, config, gateComponent?, onGroundClick?, fpv flags
+├── Scene.tsx              # Single Canvas owner; props: track, config, gateComponent?, onGroundClick?, fpv flags, viewMode?, viewResetToken?, onSnapshotReady?
+├── CameraViewController.tsx # 3D/top camera presets; renders before SmoothZoom so the zoom distance resyncs
+├── SceneSnapshot.tsx      # capture(): renders one frame from a fixed overview camera → 320×200 JPEG (gallery previews)
 ├── SceneTheme.tsx         # SceneThemeContext + useSceneTheme(); provided inside the Canvas
 ├── pointer.ts             # isCameraTouchGesture()
 ├── Grid.tsx               # Ground, field boundary, grid lines; optional onGroundClick
@@ -15,7 +17,7 @@ scene/
 ├── SkyDome.tsx            # Shader sky dome
 ├── CameraPan.tsx          # Space+left-drag / right-drag pan
 ├── CameraVerticalPan.tsx  # Shift+left-drag vertical pan
-├── SmoothZoom.tsx         # Wheel / middle-drag / pinch smooth zoom
+├── SmoothZoom.tsx         # Wheel / middle-drag / pinch smooth zoom; `resyncKey` re-reads distance after presets
 └── gates/
     ├── Gate.tsx           # Read-only gate wrapper (shadows, optional callbacks + children overlay); SceneGateProps
     ├── gateComponents.ts  # GATE_COMPONENTS: Record<GateType, component>

@@ -29,6 +29,7 @@ export interface TrackSlice {
   setTrack: (track: Track | null, generationConfig?: GenerationConfig | null) => void
   replaceTrack: (track: Track | null) => void
   syncCurrentTrack: (track: Track) => void
+  renameTrack: (name: string) => void
   updateGate: (gateId: string, updates: Partial<Gate>) => void
   setGatePosition: (gateId: string, position: { x: number; y: number; z: number }) => void
   snapAllGatesToGrid: () => void
@@ -124,6 +125,10 @@ export const createTrackSlice: StateCreator<AppState, [], [], TrackSlice> = (set
     generationConfig: null,
   }),
   syncCurrentTrack: (track) => set({ currentTrack: normalizeTrack(track) }),
+  renameTrack: (name) => set((state) => applyEdit(state, (track) => {
+    const trimmed = name.trim()
+    return trimmed && trimmed !== track.name ? { track: { ...track, name: trimmed } } : null
+  })),
   updateGate: (gateId, updates) => set((state) => applyEdit(state, (track) => {
     if (updates.type && hasSingletonGateConflict(track.gates, updates.type, gateId)) return null
 

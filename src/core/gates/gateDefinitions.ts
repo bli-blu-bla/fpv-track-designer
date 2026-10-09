@@ -17,7 +17,11 @@ import {
  * and labels. Every per-type map is typed as `Record<GateType, …>`, so the
  * compiler lists anything that is still missing.
  */
+/** Library grouping in the editor. */
+export type GateCategory = 'gate' | 'flag' | 'obstacle'
+
 export interface GateDefinition {
+  category: GateCategory
   /** Poles needed to build the gate physically; 0 = not buildable from poles. */
   poles: number
   /** Only one gate of this type may exist per track; it starts the generated lap. */
@@ -156,18 +160,21 @@ const standardOpening = singleOpening(0, BASE_HEIGHT / 2, 0, BASE_WIDTH, BASE_HE
 
 export const GATE_DEFINITIONS: Record<GateType, GateDefinition> = {
   'start-finish': {
+    category: 'gate',
     poles: 3,
     isStartFinish: true,
     topHeight: BASE_HEIGHT + 0.375,
     createOpenings: standardOpening,
   },
   standard: {
+    category: 'gate',
     poles: 3,
     isStartFinish: false,
     topHeight: BASE_HEIGHT + TOP_BAR_HALF_THICKNESS,
     createOpenings: standardOpening,
   },
   'h-gate': {
+    category: 'gate',
     poles: 4,
     isStartFinish: false,
     topHeight: BASE_HEIGHT * H_GATE_BACKREST_HEIGHT_MULTIPLIER,
@@ -176,6 +183,7 @@ export const GATE_DEFINITIONS: Record<GateType, GateDefinition> = {
     isSideDefinedTransition: (from, to) => (from === 'lower' && to === 'backrest-pass') || (from === 'backrest-pass' && to === 'lower'),
   },
   'double-h': {
+    category: 'gate',
     poles: 7,
     isStartFinish: false,
     topHeight: BASE_HEIGHT + BASE_HEIGHT * H_GATE_BACKREST_HEIGHT_MULTIPLIER,
@@ -186,6 +194,7 @@ export const GATE_DEFINITIONS: Record<GateType, GateDefinition> = {
     implicitPass: { between: ['lower', 'upper'], via: 'middle' },
   },
   hurdle: {
+    category: 'obstacle',
     poles: 0,
     isStartFinish: false,
     topHeight: BASE_HEIGHT + BASE_HEIGHT * HURDLE_OPENING_HEIGHT_MULTIPLIER,
@@ -198,6 +207,7 @@ export const GATE_DEFINITIONS: Record<GateType, GateDefinition> = {
     ),
   },
   dive: {
+    category: 'obstacle',
     poles: 0,
     isStartFinish: false,
     topHeight: BASE_HEIGHT + TOP_BAR_HALF_THICKNESS,
@@ -210,6 +220,7 @@ export const GATE_DEFINITIONS: Record<GateType, GateDefinition> = {
     },
   },
   double: {
+    category: 'gate',
     poles: 6,
     isStartFinish: false,
     topHeight: BASE_HEIGHT * 2 + TOP_BAR_HALF_THICKNESS,
@@ -217,6 +228,7 @@ export const GATE_DEFINITIONS: Record<GateType, GateDefinition> = {
     sequenceOpeningIds: () => ['lower', 'upper'],
   },
   ladder: {
+    category: 'gate',
     poles: 9,
     isStartFinish: false,
     topHeight: BASE_HEIGHT * 3 + TOP_BAR_HALF_THICKNESS,
@@ -224,18 +236,21 @@ export const GATE_DEFINITIONS: Record<GateType, GateDefinition> = {
     sequenceOpeningIds: () => [...STACKED_OPENING_ORDER],
   },
   flag: {
+    category: 'flag',
     poles: 2,
     isStartFinish: false,
     topHeight: FLAG_BASE_HEIGHT,
     createOpenings: singleOpening(-0.45, 1.1, 0, 0.8, 1.6),
   },
   'flag-small': {
+    category: 'flag',
     poles: 1,
     isStartFinish: false,
     topHeight: FLAG_SMALL_BASE_HEIGHT,
     createOpenings: singleOpening(-0.35, 0.6, 0, 0.6, 1.2),
   },
   'octagonal-tunnel': {
+    category: 'obstacle',
     poles: 0,
     isStartFinish: false,
     topHeight: BASE_HEIGHT + TOP_BAR_HALF_THICKNESS,

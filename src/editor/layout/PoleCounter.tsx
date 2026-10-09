@@ -46,12 +46,11 @@ export const PoleCounter: FC = () => {
           <PopoverTrigger asChild>
             <button
               type="button"
-              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border/60 bg-muted/40 px-2 text-xs font-medium text-foreground transition-colors hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="inline-flex h-7 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border border-border bg-muted px-2.5 text-foreground transition-colors hover:bg-secondary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label={t('polesAria', { count: breakdown.total })}
             >
               <Hammer className="size-3.5 text-muted-foreground" />
-              <span className="hidden sm:inline">{t('polesLabel')}</span>
-              <span className="tabular-nums">{breakdown.total}</span>
+              <span className="font-mono text-[13px] font-medium tabular-nums">{breakdown.total}</span>
             </button>
           </PopoverTrigger>
         </TooltipTrigger>
@@ -60,7 +59,7 @@ export const PoleCounter: FC = () => {
         </TooltipContent>
       </Tooltip>
 
-      <PopoverContent align="start" className="w-80 p-0">
+      <PopoverContent align="end" className="w-80 p-0">
         <div className="flex flex-col">
           <div className="border-b border-border px-3 py-2">
             <div className="text-sm font-semibold">{t('poleCalculation')}</div>

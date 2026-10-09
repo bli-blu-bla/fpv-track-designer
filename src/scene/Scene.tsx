@@ -14,6 +14,8 @@ import { Grid } from './Grid'
 import { CameraPan } from './CameraPan'
 import { CameraVerticalPan } from './CameraVerticalPan'
 import { SmoothZoom } from './SmoothZoom'
+import { CameraViewController, type SceneViewMode } from './CameraViewController'
+import { SceneSnapshot, type SceneSnapshotApi } from './SceneSnapshot'
 import { SkyDome } from './SkyDome'
 import { FpvFlyThrough } from './FpvFlyThrough'
 import type { Config, Track } from '@/core/types'
@@ -28,13 +30,19 @@ interface SceneProps {
   onGroundClick?: () => void
   fpvModeActive?: boolean
   onFpvComplete?: () => void
+  /** Camera preset; switching moves the camera, users can orbit freely afterwards. */
+  viewMode?: SceneViewMode
+  /** Increment to move the camera back to the current view mode's preset. */
+  viewResetToken?: number
+  /** Receives a capture function for preview images (null on unmount). Must be stable. */
+  onSnapshotReady?: (api: SceneSnapshotApi | null) => void
 }
 
 /**
  * The single R3F Canvas for editor and viewer. Renders whatever track/config it
  * is given and never reads an app store, so it stays usable read-only.
  */
-export function Scene({ track: currentTrack, config, gateComponent: GateView = Gate, onGroundClick, fpvModeActive = false, onFpvComplete }: SceneProps) {
+export function Scene({ track: currentTrack, config, gateComponent: GateView = Gate, onGroundClick, fpvModeActive = false, onFpvComplete, viewMode = 'perspective', viewResetToken = 0, onSnapshotReady }: SceneProps) {
   const controlsRef = useRef<OrbitControlsImpl>(null)
   const theme = useMemo(() => getThemeConfig(config.theme), [config.theme])
   const usesMinimalScene = theme.useSkyDome
@@ -150,7 +158,14 @@ export function Scene({ track: currentTrack, config, gateComponent: GateView = G
       />
       {!fpvModeActive && <CameraPan controlsRef={controlsRef} />}
       {!fpvModeActive && <CameraVerticalPan controlsRef={controlsRef} />}
-      {!fpvModeActive && <SmoothZoom controlsRef={controlsRef} />}
+      {onSnapshotReady && <SceneSnapshot fieldSize={config.fieldSize} onReady={onSnapshotReady} />}
+      <CameraViewController
+        controlsRef={controlsRef}
+        viewMode={viewMode}
+        resetToken={viewResetToken}
+        fieldSize={config.fieldSize}
+      />
+      {!fpvModeActive && <SmoothZoom controlsRef={controlsRef} resyncKey={`${viewMode}:${viewResetToken}`} />}
       <FpvFlyThrough
         active={fpvModeActive}
         points={flightPath?.sampledPoints ?? []}

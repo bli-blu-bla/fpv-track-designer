@@ -1,4 +1,6 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render as rtlRender, screen, fireEvent, waitFor } from '@testing-library/react'
+import type { ReactElement } from 'react'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAppStore } from '@/editor/store'
@@ -8,6 +10,8 @@ import { createDefaultGateOpenings } from '@/core/gates/gateOpenings'
 import { listTracks, saveTrack } from '@/editor/storage'
 
 import { TrackGallery } from './TrackGallery'
+
+const render = (ui: ReactElement) => rtlRender(<TooltipProvider>{ui}</TooltipProvider>)
 
 const localStorageMock = (() => {
   let store: Record<string, string> = {}
@@ -84,22 +88,33 @@ describe('TrackGallery', () => {
     resetStore()
   })
 
-  it('refreshes saved tracks when the gallery opens', async () => {
-    const { rerender } = render(
-      <TrackGallery open={false} onOpenChange={vi.fn()} />,
-    )
+  it('refreshes when a track is saved elsewhere', async () => {
+    render(<TrackGallery />)
 
     saveTrack(createTestTrack({ id: 'track-1', name: 'Track 1' }), createTestConfig())
     saveTrack(createTestTrack({ id: 'track-2', name: 'Track 2' }), createTestConfig())
-
-    rerender(<TrackGallery open onOpenChange={vi.fn()} />)
+    window.dispatchEvent(new CustomEvent('track-saved'))
 
     expect(await screen.findByText('Track 1')).not.toBeNull()
     expect(await screen.findByText('Track 2')).not.toBeNull()
   })
 
+  it('shows the saved preview image and object/pole counts', () => {
+    saveTrack(createTestTrack({ id: 'with-preview', name: 'Preview' }), createTestConfig(), {
+      thumbnail: 'data:image/jpeg;base64,AAAA',
+    })
+    saveTrack(createTestTrack({ id: 'without-preview', name: 'No Preview' }), createTestConfig())
+
+    const { container } = render(<TrackGallery />)
+
+    const images = container.querySelectorAll('img')
+    expect(images).toHaveLength(1)
+    expect(images[0].getAttribute('src')).toBe('data:image/jpeg;base64,AAAA')
+    expect(screen.getAllByText(/1 Objekte · 3 Stangen/)).toHaveLength(2)
+  })
+
   it('loads the selected track and its saved config', async () => {
-    const onOpenChange = vi.fn()
+    const onTrackOpened = vi.fn()
     const savedConfig = createTestConfig({
       fieldSize: { width: 42, height: 24 },
       showFlightPath: false,
@@ -114,20 +129,20 @@ describe('TrackGallery', () => {
       savedConfig,
     )
 
-    render(<TrackGallery open onOpenChange={onOpenChange} />)
+    render(<TrackGallery onTrackOpened={onTrackOpened} />)
 
-    fireEvent.click(screen.getByRole('button', { name: /laden/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Loaded Track – Laden' }))
 
     await waitFor(() => expect(useAppStore.getState().currentTrack?.id).toBe('loaded-track'))
     expect(useAppStore.getState().config.fieldSize).toEqual({ width: 42, height: 24 })
     expect(useAppStore.getState().config.showFlightPath).toBe(false)
-    expect(onOpenChange).toHaveBeenCalledWith(false)
+    expect(onTrackOpened).toHaveBeenCalledTimes(1)
   })
 
   it('asks for confirmation before deleting a saved track', () => {
     saveTrack(createTestTrack({ id: 'track-to-delete', name: 'Delete Me' }), createTestConfig())
 
-    render(<TrackGallery open onOpenChange={vi.fn()} />)
+    render(<TrackGallery />)
 
     fireEvent.click(screen.getByRole('button', { name: /löschen/i }))
 
@@ -139,7 +154,7 @@ describe('TrackGallery', () => {
   it('keeps the track when delete confirmation is cancelled', () => {
     saveTrack(createTestTrack({ id: 'track-to-keep', name: 'Keep Me' }), createTestConfig())
 
-    render(<TrackGallery open onOpenChange={vi.fn()} />)
+    render(<TrackGallery />)
 
     fireEvent.click(screen.getByRole('button', { name: /löschen/i }))
     fireEvent.click(screen.getByRole('button', { name: /abbrechen/i }))
@@ -152,7 +167,7 @@ describe('TrackGallery', () => {
   it('deletes and refreshes the gallery when confirmed', () => {
     saveTrack(createTestTrack({ id: 'track-to-confirm', name: 'Confirm Delete' }), createTestConfig())
 
-    render(<TrackGallery open onOpenChange={vi.fn()} />)
+    render(<TrackGallery />)
 
     fireEvent.click(screen.getByRole('button', { name: /löschen/i }))
     fireEvent.click(screen.getByRole('button', { name: /strecke löschen/i }))
@@ -163,7 +178,7 @@ describe('TrackGallery', () => {
   })
 
   it('duplicates a saved track with a new name and loads the copy', async () => {
-    const onOpenChange = vi.fn()
+    const onTrackOpened = vi.fn()
     const savedConfig = createTestConfig({
       fieldSize: { width: 36, height: 18 },
       showOpeningLabels: false,
@@ -176,9 +191,10 @@ describe('TrackGallery', () => {
         fieldSize: savedConfig.fieldSize,
       }),
       savedConfig,
+      { thumbnail: 'data:image/jpeg;base64,COPY' },
     )
 
-    render(<TrackGallery open onOpenChange={onOpenChange} />)
+    render(<TrackGallery onTrackOpened={onTrackOpened} />)
 
     fireEvent.click(screen.getByRole('button', { name: /duplizieren/i }))
     expect(screen.getByText('Strecke duplizieren')).not.toBeNull()
@@ -199,17 +215,18 @@ describe('TrackGallery', () => {
     )
     expect(screen.getByText('Original Track')).not.toBeNull()
     expect(screen.getByText('Version 2')).not.toBeNull()
+    expect(localStorage.getItem('fpv-track-thumb-duplicated-track-id')).toBe('data:image/jpeg;base64,COPY')
     await waitFor(() => expect(useAppStore.getState().currentTrack?.id).toBe('duplicated-track-id'))
     expect(useAppStore.getState().currentTrack?.name).toBe('Version 2')
     expect(useAppStore.getState().config.fieldSize).toEqual({ width: 36, height: 18 })
     expect(useAppStore.getState().config.showOpeningLabels).toBe(false)
-    expect(onOpenChange).toHaveBeenCalledWith(false)
+    expect(onTrackOpened).toHaveBeenCalledTimes(1)
   })
 
   it('confirms the delete dialog when Enter is pressed', () => {
     saveTrack(createTestTrack({ id: 'track-enter-delete', name: 'Enter Delete' }), createTestConfig())
 
-    render(<TrackGallery open onOpenChange={vi.fn()} />)
+    render(<TrackGallery />)
 
     fireEvent.click(screen.getByRole('button', { name: /löschen/i }))
     const confirmationForm = screen.getByText('Gespeicherte Strecke löschen?').closest('form')

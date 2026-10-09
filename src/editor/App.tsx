@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAppStore } from '@/editor/store'
 import { generateTrack } from '@/core/track/generator'
 import { extractGenerationConfig } from '@/core/track/generationConfig'
@@ -24,22 +24,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
 import { GateConfigPanel } from '@/editor/panels/GateConfigPanel'
 import { ThemeConfigPanel } from '@/editor/panels/ThemeConfigPanel'
 import { ApplyConfigFooter } from '@/editor/panels/ApplyConfigFooter'
 import { Scene } from '@/scene/Scene'
 import { EditableGate } from './gates/EditableGate'
+import type { SceneViewMode } from '@/scene/CameraViewController'
+import type { SceneSnapshotApi } from '@/scene/SceneSnapshot'
 import { TopBar } from '@/editor/layout/TopBar'
-import { LeftToolPanel } from '@/editor/layout/LeftToolPanel'
+import { ToolRail } from '@/editor/layout/ToolRail'
+import { PANEL_TITLE_KEYS, type SidePanelId } from '@/editor/layout/sidePanels'
+import { SidePanel } from '@/editor/layout/SidePanel'
+import { ViewModeTabs, ViewToolbar } from '@/editor/layout/ViewToolbar'
+import { Inspector } from '@/editor/layout/Inspector'
+import { GateLibraryPanel } from '@/editor/panels/GateLibraryPanel'
+import { LayersPanel } from '@/editor/panels/LayersPanel'
+import { ShareTrackDialog } from '@/editor/panels/ShareTrackDialog'
+import { useShareTrack } from '@/editor/hooks/useShareTrack'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useTranslation } from '@/i18n'
 
@@ -85,29 +86,33 @@ function App() {
 
   // SaveTrackDialog is now globally controlled via store (isSaveDialogOpen).
   // We keep the gallery/shortcuts/settings sheet state local.
-  const [galleryOpen, setGalleryOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [designOpen, setDesignOpen] = useState(false)
+  const [activePanel, setActivePanel] = useState<SidePanelId | null>('library')
+  const [viewMode, setViewMode] = useState<SceneViewMode>('perspective')
+  const [viewResetToken, setViewResetToken] = useState(0)
   const [fpvModeActive, setFpvModeActive] = useState(false)
+  const { share, dialogProps: shareDialogProps } = useShareTrack()
+  const snapshotRef = useRef<SceneSnapshotApi | null>(null)
+  const handleSnapshotReady = useCallback((api: SceneSnapshotApi | null) => {
+    snapshotRef.current = api
+  }, [])
+  const captureThumbnail = useCallback(() => snapshotRef.current?.capture() ?? null, [])
   const [sequenceDraft, setSequenceDraft] = useState<{ editorKey: string | null; value: string }>({
     editorKey: null,
     value: '',
   })
   const sequenceInputRef = useRef<HTMLInputElement>(null)
 
+  const shuffleTrack = () => {
+    void requestDestructiveAction('shuffle').then((proceed) => {
+      if (proceed) setTrack(generateTrack(config), extractGenerationConfig(config))
+    })
+  }
+
   useKeyboardShortcuts({
     onSave: () => openSaveDialog(),
-    onShuffle: () => {
-      void requestDestructiveAction('shuffle').then((proceed) => {
-        if (proceed) setTrack(generateTrack(config), extractGenerationConfig(config))
-      })
-    },
-    onOpenGallery: () => {
-      setSettingsOpen(false)
-      setDesignOpen(false)
-      setGalleryOpen(true)
-    },
+    onShuffle: shuffleTrack,
+    onOpenGallery: () => setActivePanel('tracks'),
     onEscape: () => setFpvModeActive(false),
   })
 
@@ -211,33 +216,36 @@ function App() {
 
   return (
     <TooltipProvider>
-      <div className="flex h-dvh w-dvw flex-col overflow-hidden">
+      <div className="flex h-dvh w-dvw flex-col overflow-hidden bg-background text-[13px]">
         <TopBar
           onShortcutsClick={() => setShortcutsOpen(true)}
+          onShuffle={shuffleTrack}
           fpvModeActive={fpvModeActive}
           fpvDisabled={!currentTrack || currentTrack.gates.length < 2}
           onFpvToggle={() => setFpvModeActive((active) => !active)}
         />
-        <div className="flex min-h-0 flex-1 overflow-hidden">
-          <LeftToolPanel
-            onSaveClick={() => openSaveDialog()}
-            onGalleryClick={() => {
-              setSettingsOpen(false)
-              setDesignOpen(false)
-              setGalleryOpen(true)
-            }}
-            onSettingsClick={() => {
-              setGalleryOpen(false)
-              setDesignOpen(false)
-              setSettingsOpen(true)
-            }}
-            onDesignClick={() => {
-              setGalleryOpen(false)
-              setSettingsOpen(false)
-              setDesignOpen(true)
-            }}
+        <div className="flex min-h-0 flex-1">
+          <ToolRail
+            activePanel={activePanel}
+            onPanelToggle={(panel) => setActivePanel((current) => current === panel ? null : panel)}
+            onShareClick={share}
+            shareDisabled={!currentTrack}
+            onShortcutsClick={() => setShortcutsOpen(true)}
           />
-          <main className="relative min-w-0 flex-1 touch-none pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0">
+          {activePanel && (
+            <SidePanel
+              title={t(PANEL_TITLE_KEYS[activePanel])}
+              onClose={() => setActivePanel(null)}
+              footer={activePanel === 'field' ? <ApplyConfigFooter /> : undefined}
+            >
+              {activePanel === 'library' && <GateLibraryPanel />}
+              {activePanel === 'layers' && <LayersPanel />}
+              {activePanel === 'tracks' && <TrackGallery />}
+              {activePanel === 'field' && <GateConfigPanel />}
+              {activePanel === 'appearance' && <ThemeConfigPanel />}
+            </SidePanel>
+          )}
+          <main className="relative min-w-0 flex-1 touch-none overflow-hidden">
             <Scene
               track={currentTrack}
               config={config}
@@ -245,46 +253,36 @@ function App() {
               onGroundClick={clearSelectionOnGroundClick}
               fpvModeActive={fpvModeActive}
               onFpvComplete={() => setFpvModeActive(false)}
+              viewMode={viewMode}
+              viewResetToken={viewResetToken}
+              onSnapshotReady={handleSnapshotReady}
             />
+            {!fpvModeActive && <ViewModeTabs viewMode={viewMode} onChange={setViewMode} />}
+            <p className="pointer-events-none absolute top-4 right-3 hidden text-[11px] text-muted-foreground xl:block">
+              {t('viewHint')}
+            </p>
+            {fpvModeActive ? (
+              <div className="absolute top-3.5 left-1/2 flex h-9 -translate-x-1/2 items-center gap-2.5 rounded-full border border-border bg-background pr-1.5 pl-3.5 shadow-xl shadow-black/40">
+                <span aria-hidden="true" className="size-2 rounded-full bg-red-500" />
+                <span className="font-medium">{t('fpvFlight')}</span>
+                <button
+                  type="button"
+                  onClick={() => setFpvModeActive(false)}
+                  className="h-[26px] rounded-full border border-border px-2.5 text-xs hover:bg-secondary"
+                >
+                  {t('fpvStopShort')} <span className="font-mono text-subtle-foreground">Esc</span>
+                </button>
+              </div>
+            ) : (
+              <ViewToolbar onResetView={() => setViewResetToken((token) => token + 1)} />
+            )}
           </main>
+          <Inspector />
         </div>
       </div>
-      <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <SheetContent side="left" className="flex w-[min(100dvw,28rem)] flex-col gap-0 p-0 sm:max-w-md">
-          <SheetHeader className="pr-12">
-            <SheetTitle>{t('settingsTitle')}</SheetTitle>
-            <SheetDescription>
-              {t('settingsDescription')}
-            </SheetDescription>
-          </SheetHeader>
-          <Separator />
-          <ScrollArea className="min-h-0 flex-1">
-            <div className="p-4">
-              <GateConfigPanel />
-            </div>
-          </ScrollArea>
-          <ApplyConfigFooter />
-        </SheetContent>
-      </Sheet>
-      <Sheet open={designOpen} onOpenChange={setDesignOpen}>
-        <SheetContent side="left" className="flex w-[min(100dvw,28rem)] flex-col gap-0 p-0 sm:max-w-md">
-          <SheetHeader className="pr-12">
-            <SheetTitle>{t('design')}</SheetTitle>
-            <SheetDescription>
-              {t('designDescription')}
-            </SheetDescription>
-          </SheetHeader>
-          <Separator />
-          <ScrollArea className="min-h-0 flex-1">
-            <div className="p-4">
-              <ThemeConfigPanel />
-            </div>
-          </ScrollArea>
-        </SheetContent>
-      </Sheet>
-      <SaveTrackDialog />
+      <ShareTrackDialog {...shareDialogProps} />
+      <SaveTrackDialog captureThumbnail={captureThumbnail} />
       <UnsavedChangesDialog />
-      <TrackGallery open={galleryOpen} onOpenChange={setGalleryOpen} />
       <KeyboardShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
       <Dialog open={pendingGateInsertion !== null} onOpenChange={(open) => {
         if (!open) closeGateInsertionDialog()

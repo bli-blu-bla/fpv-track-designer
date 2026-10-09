@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { defaultConfig } from '@/core/defaultConfig'
+import { createDefaultGateOpenings } from '@/core/gates/gateOpenings'
+import type { Track } from '@/core/types'
 import { useAppStore } from '@/editor/store'
 
 import { TopBar } from './TopBar'
@@ -29,10 +31,21 @@ Object.defineProperty(globalThis, 'localStorage', {
   configurable: true,
 })
 
+const createTrack = (): Track => ({
+  id: 'track-1',
+  name: 'Vereinsrennen',
+  gates: [{ id: 'g1', type: 'standard', position: { x: 0, y: 0, z: 0 }, rotation: 0, openings: createDefaultGateOpenings('standard') }],
+  gateSequence: [{ gateId: 'g1', openingId: 'main', reverse: false }],
+  fieldSize: { width: 30, height: 15 },
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-01T00:00:00.000Z',
+})
+
 const resetStore = () => {
   useAppStore.setState({
     config: defaultConfig,
     currentTrack: null,
+    isTrackModified: false,
     past: [],
     future: [],
   })
@@ -42,6 +55,7 @@ const renderTopBar = ({
   fpvModeActive = false,
   fpvDisabled = false,
   onFpvToggle = vi.fn<() => void>(),
+  onShuffle = vi.fn<() => void>(),
 } = {}) => {
   const onShortcutsClick = vi.fn<() => void>()
 
@@ -49,6 +63,7 @@ const renderTopBar = ({
     <TooltipProvider>
       <TopBar
         onShortcutsClick={onShortcutsClick}
+        onShuffle={onShuffle}
         fpvModeActive={fpvModeActive}
         fpvDisabled={fpvDisabled}
         onFpvToggle={onFpvToggle}
@@ -56,7 +71,7 @@ const renderTopBar = ({
     </TooltipProvider>,
   )
 
-  return { onFpvToggle, onShortcutsClick }
+  return { onFpvToggle, onShortcutsClick, onShuffle }
 }
 
 describe('TopBar', () => {
@@ -66,36 +81,57 @@ describe('TopBar', () => {
     vi.clearAllMocks()
   })
 
-  it('renders a mobile FPV play button that toggles fly-through mode', () => {
-    const onFpvToggle = vi.fn<() => void>()
+  it('toggles FPV flight from the primary button', () => {
+    const { onFpvToggle } = renderTopBar()
 
-    renderTopBar({ onFpvToggle })
-
-    const mobileFpvButton = screen.getByRole('button', { name: 'FPV-Flug starten' })
-    expect(mobileFpvButton.className).toContain('md:hidden')
-
-    fireEvent.click(mobileFpvButton)
+    fireEvent.click(screen.getByRole('button', { name: 'FPV-Flug' }))
 
     expect(onFpvToggle).toHaveBeenCalledTimes(1)
   })
 
-  it('shows the mobile FPV stop state when fly-through mode is active', () => {
+  it('shows the stop label while flying', () => {
     renderTopBar({ fpvModeActive: true })
 
-    const mobileFpvButton = screen.getByRole('button', { name: 'FPV-Flug stoppen' })
-    expect(mobileFpvButton.className).toContain('md:hidden')
+    expect(screen.getByRole('button', { name: 'FPV stoppen' })).not.toBeNull()
   })
 
-  it('hides undo and redo controls on mobile widths', () => {
+  it('disables undo and redo without history', () => {
     renderTopBar()
 
-    const undoButton = screen.getByRole('button', { name: 'Rückgängig' })
-    const redoButton = screen.getByRole('button', { name: 'Wiederholen' })
-    const historyControls = undoButton.closest('div')
+    expect(screen.getByRole('button', { name: 'Rückgängig' })).toHaveProperty('disabled', true)
+    expect(screen.getByRole('button', { name: 'Wiederholen' })).toHaveProperty('disabled', true)
+  })
 
-    expect(historyControls?.className).toContain('hidden')
-    expect(historyControls?.className).toContain('md:flex')
-    expect(redoButton.closest('div')).toBe(historyControls)
+  it('triggers shuffle', () => {
+    const { onShuffle } = renderTopBar()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Strecke shuffeln' }))
+
+    expect(onShuffle).toHaveBeenCalledTimes(1)
+  })
+
+  it('renames the track on blur and marks it unsaved', () => {
+    useAppStore.getState().setTrack(createTrack())
+    renderTopBar()
+
+    const nameInput = screen.getByLabelText('Streckenname')
+    expect(screen.getByLabelText('Gespeichert')).not.toBeNull()
+
+    fireEvent.change(nameInput, { target: { value: 'Halle Training' } })
+    fireEvent.blur(nameInput)
+
+    expect(useAppStore.getState().currentTrack?.name).toBe('Halle Training')
+    expect(screen.getByRole('button', { name: 'Ungespeicherte Änderungen – jetzt speichern' })).not.toBeNull()
+  })
+
+  it('offers JSON export and import in the export menu', () => {
+    useAppStore.getState().setTrack(createTrack())
+    renderTopBar()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Exportieren' }))
+
+    expect(screen.getByRole('button', { name: 'Als JSON' })).not.toBeNull()
+    expect(screen.getByRole('button', { name: 'Importieren…' })).not.toBeNull()
   })
 
   it('switches header labels to English via the language toggle', () => {
@@ -104,41 +140,7 @@ describe('TopBar', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Sprache auf Englisch umstellen' }))
 
     expect(screen.getByRole('button', { name: 'Switch language to German' })).not.toBeNull()
-    expect(screen.getByRole('button', { name: 'Start FPV flight' })).not.toBeNull()
+    expect(screen.getByRole('button', { name: 'FPV flight' })).not.toBeNull()
     expect(window.localStorage.getItem('fpv-track-designer-language')).toBe('en')
-  })
-
-  it('toggles the ground grid display setting', () => {
-    renderTopBar()
-
-    const showGridToggle = screen.getByLabelText('Grid anzeigen')
-    expect(useAppStore.getState().config.showGrid).toBe(false)
-
-    fireEvent.click(showGridToggle)
-    expect(useAppStore.getState().config.showGrid).toBe(true)
-
-    fireEvent.click(showGridToggle)
-    expect(useAppStore.getState().config.showGrid).toBe(false)
-  })
-
-  it('reveals a three-step snap precision control only when grid snap is enabled', () => {
-    renderTopBar()
-
-    expect(screen.queryByText('Snap-Genauigkeit')).toBeNull()
-
-    fireEvent.click(screen.getByLabelText('Grid-Snap'))
-
-    expect(screen.getByText('Snap-Genauigkeit')).not.toBeNull()
-    expect(screen.getByText('0,3 m')).not.toBeNull()
-    expect(screen.getByText('0,5 m')).not.toBeNull()
-    expect(screen.getByText('1 m')).not.toBeNull()
-    expect(useAppStore.getState().config.snapGatesToGrid).toBe(true)
-    expect(useAppStore.getState().config.snapGridSize).toBe(0.3)
-
-    fireEvent.click(screen.getByRole('button', { name: '1/2 Feld · 0,5 m' }))
-    expect(useAppStore.getState().config.snapGridSize).toBe(0.5)
-
-    fireEvent.click(screen.getByRole('button', { name: '1 Feld · 1,0 m' }))
-    expect(useAppStore.getState().config.snapGridSize).toBe(1)
   })
 })

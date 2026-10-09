@@ -5,13 +5,20 @@
 ## STRUCTURE
 ```
 editor/
-├── App.tsx                 # Dialogs, first-load generation, passes store state into <Scene>
-├── storage.ts              # localStorage CRUD via core schema (key prefix `fpv-track-`)
+├── App.tsx                 # Shell layout (header / rail / side panel / canvas / inspector), dialogs, first-load generation
+├── storage.ts              # localStorage CRUD via core schema (`fpv-track-<id>`), list with gate/pole counts, JPEG previews under `fpv-track-thumb-<id>`
 ├── store/                  # Zustand slices, see store/AGENTS.md
-├── hooks/useKeyboardShortcuts.ts
-├── layout/                 # TopBar, LeftToolPanel, PoleCounter
-├── panels/                 # GateConfigPanel, ThemeConfigPanel, ApplyConfigFooter, SaveTrackDialog,
-│                           # TrackGallery, ShareTrackDialog, UnsavedChangesDialog, KeyboardShortcutsDialog
+├── hooks/                  # useKeyboardShortcuts, useShareTrack (link + shortener), useGateUiColor (theme swatches)
+├── layout/
+│   ├── TopBar.tsx          # logo, undo/redo, editable track name, save state, shuffle, poles, export menu, language, help, FPV
+│   ├── ToolRail.tsx        # 52px icon rail; sidePanels.ts holds SidePanelId + titles
+│   ├── SidePanel.tsx       # 300px panel frame (title, close, optional footer)
+│   ├── ViewToolbar.tsx     # floating canvas toolbar (grid/snap/path/passes, snap size, reset view) + 3D/top tabs
+│   ├── Inspector.tsx       # 288px right sidebar: track stats or selected-gate properties (hidden below lg)
+│   └── PoleCounter.tsx
+├── panels/                 # GateLibraryPanel, LayersPanel, GateConfigPanel (Feld), ThemeConfigPanel (Darstellung),
+│                           # ApplyConfigFooter, SaveTrackDialog, TrackGallery (Meine Tracks panel), ShareTrackDialog,
+│                           # UnsavedChangesDialog, KeyboardShortcutsDialog
 ├── gates/
 │   ├── EditableGate.tsx    # Scene gate + selection, direction toggle, sequence editor, handles
 │   ├── GateHandles.tsx     # Html overlay buttons: move/elevate/rotate/delete + insert handles
@@ -25,8 +32,12 @@ editor/
 |------|----------|
 | Store state/actions, dirty flow | `store/`, `store/AGENTS.md` |
 | Shortcuts | `hooks/useKeyboardShortcuts.ts` (S, Cmd/Ctrl+S, G, Cmd/Ctrl+Z/Y, Escape, Backspace, Enter) |
-| Import/export JSON | `layout/TopBar.tsx` → `serializeTrack(…, { pretty: true })` / `deserializeTrack()` |
-| Shuffle / share | `layout/LeftToolPanel.tsx`, `panels/ShareTrackDialog.tsx`, `src/core/share/` |
+| Import/export JSON | `layout/TopBar.tsx` export menu → `serializeTrack(…, { pretty: true })` / `deserializeTrack()` |
+| Shuffle | `App.tsx` `shuffleTrack` (TopBar dice + `S`) |
+| Share | `hooks/useShareTrack.ts`, `panels/ShareTrackDialog.tsx`, `src/core/share/` |
+| Place gates from the library | `panels/GateLibraryPanel.tsx` (field center, appended to the lap) |
+| Numeric gate editing | `layout/Inspector.tsx` (position/height/rotation/order, duplicate, delete) |
+| Camera presets | `ViewModeTabs` / reset → `Scene` `viewMode` + `viewResetToken` → `src/scene/CameraViewController.tsx` |
 | Gate click/selection | `gates/EditableGate.tsx` (Shift/Meta/Ctrl additive; ignored while dragging or camera-gesturing) |
 | Drag behavior | `gates/gateHandleMath.ts` (math), `gates/useGateDrag.ts` (events) |
 | Insert handle placement | `gateHandleMath.getInsertControl()` |
@@ -37,7 +48,11 @@ editor/
 - Panels may read `useAppStore`; shadcn primitives in `src/components/ui` must not.
 - Shortcut handlers early-return for `INPUT`, `TEXTAREA`, `isContentEditable` targets.
 - All copy goes through `useTranslation()`; add DE + EN keys together.
-- Keep mobile bottom-rail and desktop side-rail classes together in `LeftToolPanel`.
+- Visual language (Claude Design "Track Builder"): zinc surfaces (`background`/`muted`/`secondary`), amber `primary` only for the FPV button, active toggles and badges, `font-mono` for numbers and units. Use tokens (`text-subtle-foreground`, `border-strong-border`, …) instead of raw hex.
+- Rail panels are mutually exclusive (library, layers, tracks, field, appearance); share stays a dialog.
+- Saving captures a preview via `Scene` `onSnapshotReady` → `SaveTrackDialog captureThumbnail`; thumbnails are optional (old saves have none) and only `data:image/jpeg;base64,` values are read back.
+- Inspector edits go through `updateGate`, so each commit is one undo step; the rotation slider keeps a local draft until release.
+- Geist Mono is imported in `src/main.tsx` only, so the single-file viewer does not inline it.
 
 ## ANTI-PATTERNS
 - Do not call `generateTrack()` / `replaceTrack()` from UI without the destructive-action request.
@@ -46,5 +61,5 @@ editor/
 
 ## TESTING
 - `store/trackSlice.test.ts` (largest suite), `configSlice.test.ts`; tests use `createEditorStore()`.
-- RTL suites: `layout/TopBar`, `layout/LeftToolPanel`, `panels/GateConfigPanel`, `ThemeConfigPanel`, `TrackGallery`, `ShareTrackDialog`. Destructive flows are async: assert with `waitFor`.
+- RTL suites: `layout/TopBar`, `layout/ToolRail` (incl. share flow), `layout/ViewToolbar`, `layout/Inspector`, `panels/GateLibraryPanel` (+ layers), `GateConfigPanel`, `ThemeConfigPanel`, `TrackGallery`, `ShareTrackDialog`. Destructive flows are async: assert with `waitFor`.
 - `hooks/useKeyboardShortcuts.test.tsx`, `gates/gateHandleMath.test.ts`, `storage.test.ts`.

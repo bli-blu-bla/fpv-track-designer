@@ -4,24 +4,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAppStore } from '@/editor/store'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { defaultConfig } from '@/core/defaultConfig'
-import * as generator from '@/core/track/generator'
 import type { Track } from '@/core/types'
 import { createDefaultGateOpenings } from '@/core/gates/gateOpenings'
+import { useShareTrack } from '@/editor/hooks/useShareTrack'
+import { ShareTrackDialog } from '@/editor/panels/ShareTrackDialog'
 
-import { LeftToolPanel } from './LeftToolPanel'
-
-const resetStore = () => {
-  useAppStore.setState({
-    config: defaultConfig,
-    currentTrack: null,
-    selectedGateId: null,
-    selectedGateIds: [],
-    isDeleteDialogOpen: false,
-    isDraggingGate: false,
-    past: [],
-    future: [],
-  })
-}
+import { ToolRail } from './ToolRail'
+import type { SidePanelId } from './sidePanels'
 
 const createMockTrack = (id: string): Track => ({
   id,
@@ -41,48 +30,57 @@ const createMockTrack = (id: string): Track => ({
   updatedAt: '2024-01-01T00:00:00.000Z',
 })
 
-const renderPanel = () =>
-  render(
-    <TooltipProvider>
-      <LeftToolPanel />
-    </TooltipProvider>,
-  )
+function RailWithShare({ activePanel = null, onPanelToggle = () => undefined }: {
+  activePanel?: SidePanelId | null
+  onPanelToggle?: (panel: SidePanelId) => void
+}) {
+  const { share, dialogProps } = useShareTrack()
+  const hasTrack = useAppStore((state) => state.currentTrack !== null)
 
-describe('LeftToolPanel', () => {
+  return (
+    <TooltipProvider>
+      <ToolRail
+        activePanel={activePanel}
+        onPanelToggle={onPanelToggle}
+        onShareClick={share}
+        shareDisabled={!hasTrack}
+        onShortcutsClick={() => undefined}
+      />
+      <ShareTrackDialog {...dialogProps} />
+    </TooltipProvider>
+  )
+}
+
+describe('ToolRail', () => {
   beforeEach(() => {
-    resetStore()
+    useAppStore.setState({ config: defaultConfig, currentTrack: null })
     vi.clearAllMocks()
     vi.unstubAllGlobals()
   })
 
-  it('calls generateTrack and setTrack from Mischen', async () => {
-    const trackByShuffle = createMockTrack('shuffle')
+  it('lists panels, gallery, share and shortcuts in rail order', () => {
+    render(<RailWithShare />)
 
-    const generateTrackMock = vi
-      .spyOn(generator, 'generateTrack')
-      .mockReturnValueOnce(trackByShuffle)
+    const names = screen.getAllByRole('button').map((button) => button.getAttribute('aria-label'))
 
-    renderPanel()
-
-    const shuffleButton = screen.getByRole('button', { name: 'Shuffle' })
-
-    fireEvent.click(shuffleButton)
-    await waitFor(() => expect(generateTrackMock).toHaveBeenCalledTimes(1))
-    expect(generateTrackMock).toHaveBeenCalledWith(useAppStore.getState().config)
-    expect(useAppStore.getState().currentTrack?.id).toBe('shuffle')
+    expect(names).toEqual(['Bibliothek', 'Ebenen', 'Meine Tracks', 'Track Teilen', 'Feld', 'Darstellung', 'Tastenkürzel'])
   })
 
-  it('renders Track Teilen between Speichern and Galerie', () => {
-    renderPanel()
+  it('marks the active panel and reports toggles', () => {
+    const onPanelToggle = vi.fn<(panel: SidePanelId) => void>()
+    render(<RailWithShare activePanel="layers" onPanelToggle={onPanelToggle} />)
 
-    const buttonNames = screen.getAllByRole('button').map((button) => button.getAttribute('aria-label'))
+    expect(screen.getByRole('button', { name: 'Ebenen' }).getAttribute('aria-pressed')).toBe('true')
 
-    expect(buttonNames).toEqual(['Shuffle', 'Speichern', 'Track Teilen', 'Galerie', 'Einstellungen', 'Design'])
-    expect(screen.queryByRole('button', { name: 'Neue Strecke' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Feld' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Meine Tracks' }))
+
+    expect(onPanelToggle).toHaveBeenCalledWith('field')
+    expect(onPanelToggle).toHaveBeenCalledWith('tracks')
   })
 
-  it('disables Track Teilen when no track is loaded', () => {
-    renderPanel()
+  it('disables sharing when no track is loaded', () => {
+    render(<RailWithShare />)
 
     expect(screen.getByRole('button', { name: 'Track Teilen' })).toHaveProperty('disabled', true)
   })
@@ -97,24 +95,19 @@ describe('LeftToolPanel', () => {
     vi.stubGlobal('fetch', fetchMock)
     useAppStore.setState({ currentTrack: createMockTrack('share') })
 
-    renderPanel()
+    render(<RailWithShare />)
 
     fireEvent.click(screen.getByRole('button', { name: 'Track Teilen' }))
 
     const longShareInput = screen.getByLabelText('Langer Link')
     const shortShareInput = screen.getByLabelText('Teilbarer Link')
-    expect(longShareInput).toHaveProperty('value')
     expect((longShareInput as HTMLInputElement).value.startsWith('https://sharedtrack.fpvooe.com/#')).toBe(true)
     expect(shortShareInput).toHaveProperty('value', '')
 
     await waitFor(() => expect(shortShareInput).toHaveProperty('value', 'http://go.fpvooe.com/viMbW'))
-    expect((longShareInput as HTMLInputElement).value.startsWith('https://sharedtrack.fpvooe.com/#')).toBe(true)
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/shorten-track',
-      expect.objectContaining({
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      }),
+      expect.objectContaining({ method: 'POST', headers: { 'Content-Type': 'application/json' } }),
     )
   })
 })

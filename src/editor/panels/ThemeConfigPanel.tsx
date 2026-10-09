@@ -1,60 +1,51 @@
 import { useAppStore } from '@/editor/store'
-import type { ThemeId } from '@/core/types'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
-import { useTranslation } from '@/i18n'
+import { THEME_IDS, THEME_PRESETS, type ThemeId } from '@/core/types'
+import { cn } from '@/lib/utils'
+import { useTranslation, type TranslationKey } from '@/i18n'
+
+const THEME_TEXT: Record<ThemeId, { label: TranslationKey; description: TranslationKey }> = {
+  minimal: { label: 'themeMinimal', description: 'themeMinimalDescription' },
+  realistic: { label: 'themeRealistic', description: 'themeRealisticDescription' },
+  night: { label: 'themeNight', description: 'themeNightDescription' },
+}
 
 export function ThemeConfigPanel() {
   const { t } = useTranslation()
   const activeTheme = useAppStore((state) => state.config.theme)
   const setTheme = useAppStore((state) => state.setTheme)
 
-  const themeOptions: Array<{ id: ThemeId; label: string; description: string }> = [
-  { id: 'minimal', label: t('themeMinimal'), description: t('themeMinimalDescription') },
-  { id: 'realistic', label: t('themeRealistic'), description: t('themeRealisticDescription') },
-  { id: 'night', label: t('themeNight'), description: t('themeNightDescription') },
-]
-
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('design')}</CardTitle>
-        <CardDescription>
-          {t('designDescription')}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <Label className="text-sm text-muted-foreground">
-          {t('visualAppearance')}
-        </Label>
-        <div className="grid gap-2">
-          {themeOptions.map(({ id, label, description }) => {
-            const isSelected = activeTheme === id
+    <div className="flex flex-col gap-2">
+      <h3 className="text-xs font-medium text-muted-foreground">{t('visualAppearance')}</h3>
+      <div className="grid gap-2">
+        {THEME_IDS.map((id) => {
+          const isSelected = activeTheme === id
+          const { skyTop, skyHorizon, groundGrass } = THEME_PRESETS[id].colors
 
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setTheme(id)}
-                className={`flex flex-col items-start gap-0.5 rounded-lg border p-3 text-left transition-colors ${
-                  isSelected
-                    ? 'border-primary bg-primary/10 ring-1 ring-primary/70'
-                    : 'border-border hover:border-primary/50 hover:bg-accent/30'
-                }`}
-              >
-                <span className={`text-sm font-medium ${isSelected ? 'text-primary' : ''}`}>{label}</span>
-                <span className={`text-xs ${isSelected ? 'text-foreground/80' : 'text-muted-foreground'}`}>{description}</span>
-              </button>
-            )
-          })}
-        </div>
-      </CardContent>
-    </Card>
+          return (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={isSelected}
+              onClick={() => setTheme(id)}
+              className={cn(
+                'flex flex-col gap-2 rounded-lg border p-1.5 text-left transition-colors',
+                isSelected ? 'border-foreground' : 'border-border hover:border-ring',
+              )}
+            >
+              <span
+                aria-hidden="true"
+                className="h-11 rounded-[5px]"
+                style={{ background: `linear-gradient(${skyTop} 0%, ${skyHorizon} 62%, ${groundGrass} 62%)` }}
+              />
+              <span className="flex flex-col gap-0.5 px-1 pb-1">
+                <span className="text-xs font-medium">{t(THEME_TEXT[id].label)}</span>
+                <span className="text-[11px] leading-snug text-subtle-foreground">{t(THEME_TEXT[id].description)}</span>
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
   )
 }

@@ -1,72 +1,102 @@
-import type { FC, ChangeEvent } from 'react'
+import { useRef, useState, type ChangeEvent, type FC } from 'react'
 import {
-  Drone,
-  Undo2,
-  Redo2,
-  Upload,
-  Download,
-  Play,
-  Square,
+  ChevronDown,
   CircleHelp,
+  CloudCheck,
+  Dice5,
+  Download,
+  FileJson,
+  Languages,
+  Play,
+  Redo2,
+  Save,
+  Square,
+  Undo2,
+  Upload,
 } from 'lucide-react'
 import { useAppStore } from '@/editor/store'
 import { serializeTrack, deserializeTrack } from '@/core/schemas/track.schema'
-import { SNAP_GRID_SIZES, type SnapGridSize } from '@/core/types'
 import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
-import { Badge } from '@/components/ui/badge'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
 import { useTranslation } from '@/i18n'
 import { PoleCounter } from './PoleCounter'
 
 interface TopBarProps {
   onShortcutsClick: () => void
+  onShuffle: () => void
   fpvModeActive: boolean
   fpvDisabled: boolean
   onFpvToggle: () => void
 }
 
-export const TopBar: FC<TopBarProps> = ({ onShortcutsClick, fpvModeActive, fpvDisabled, onFpvToggle }) => {
+function Divider() {
+  return <div aria-hidden="true" className="mx-1 h-5 w-px shrink-0 bg-border" />
+}
+
+function HeaderIconButton({ label, className, ...props }: React.ComponentProps<typeof Button> & { label: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={label}
+          className={cn('size-8 text-muted-foreground hover:bg-secondary hover:text-foreground', className)}
+          {...props}
+        />
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  )
+}
+
+/** Inline-editable track name; commits on blur or Enter, Escape restores. */
+function TrackNameInput() {
+  const { t } = useTranslation()
+  const name = useAppStore((state) => state.currentTrack?.name ?? '')
+  const renameTrack = useAppStore((state) => state.renameTrack)
+
+  return (
+    <input
+      key={name}
+      defaultValue={name}
+      aria-label={t('trackName')}
+      onBlur={(event) => {
+        renameTrack(event.currentTarget.value)
+        if (!event.currentTarget.value.trim()) event.currentTarget.value = name
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter') event.currentTarget.blur()
+        if (event.key === 'Escape') {
+          event.currentTarget.value = name
+          event.currentTarget.blur()
+        }
+      }}
+      className="h-8 w-40 min-w-16 shrink rounded-md border border-transparent bg-transparent px-2 text-[13px] font-medium text-foreground outline-none transition-colors hover:border-border focus:border-ring focus:bg-muted"
+    />
+  )
+}
+
+export const TopBar: FC<TopBarProps> = ({ onShortcutsClick, onShuffle, fpvModeActive, fpvDisabled, onFpvToggle }) => {
   const { language, t, toggleLanguage } = useTranslation()
-  const past = useAppStore((state) => state.past)
-  const future = useAppStore((state) => state.future)
+  const canUndo = useAppStore((state) => state.past.length > 0)
+  const canRedo = useAppStore((state) => state.future.length > 0)
   const undo = useAppStore((state) => state.undo)
   const redo = useAppStore((state) => state.redo)
   const currentTrack = useAppStore((state) => state.currentTrack)
   const config = useAppStore((state) => state.config)
+  const isTrackModified = useAppStore((state) => state.isTrackModified)
   const replaceTrack = useAppStore((state) => state.replaceTrack)
   const setConfig = useAppStore((state) => state.setConfig)
   const requestDestructiveAction = useAppStore((state) => state.requestDestructiveAction)
-  const setSnapGatesToGrid = useAppStore((state) => state.setSnapGatesToGrid)
-  const setSnapGridSize = useAppStore((state) => state.setSnapGridSize)
-  const snapAllGatesToGrid = useAppStore((state) => state.snapAllGatesToGrid)
-  const setShowFlightPath = useAppStore((state) => state.setShowFlightPath)
-  const setShowOpeningLabels = useAppStore((state) => state.setShowOpeningLabels)
-  const setShowGrid = useAppStore((state) => state.setShowGrid)
-
-  const handleSnapGatesToGridChange = (enabled: boolean) => {
-    setSnapGatesToGrid(enabled)
-    if (enabled) {
-      snapAllGatesToGrid()
-    }
-  }
-
-  const snapGridSizeLabels: Record<SnapGridSize, string> = {
-    0.3: t('gridSnapPrecisionFine'),
-    0.5: t('gridSnapPrecisionHalfField'),
-    1: t('gridSnapPrecisionFullField'),
-  }
-
-  const handleSnapGridSizeChange = (nextSize: SnapGridSize) => {
-    setSnapGridSize(nextSize)
-    snapAllGatesToGrid()
-  }
+  const openSaveDialog = useAppStore((state) => state.openSaveDialog)
+  const [exportOpen, setExportOpen] = useState(false)
+  const importInputRef = useRef<HTMLInputElement>(null)
 
   const handleExport = () => {
+    setExportOpen(false)
     if (!currentTrack) return
     const json = serializeTrack(currentTrack, config, { pretty: true })
     const blob = new Blob([json], { type: 'application/json' })
@@ -82,9 +112,7 @@ export const TopBar: FC<TopBarProps> = ({ onShortcutsClick, fpvModeActive, fpvDi
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
-    // Wrap the entire import (read + parse + apply) so the confirmation
-    // dialog is shown BEFORE the file is read when the track is dirty.
-    // The user's pick is discarded if they cancel.
+    // Confirm before reading so a dirty track is never replaced silently.
     void requestDestructiveAction('import').then((proceed) => {
       if (!proceed) return
 
@@ -107,298 +135,136 @@ export const TopBar: FC<TopBarProps> = ({ onShortcutsClick, fpvModeActive, fpvDi
     })
   }
 
+  const menuItemClass = 'flex h-8 w-full items-center gap-2.5 rounded-sm px-2 text-left text-[13px] text-foreground hover:bg-secondary disabled:pointer-events-none disabled:opacity-50'
+
   return (
-    <header className="flex h-14 w-full shrink-0 items-center gap-1 border-b border-border bg-background/90 px-2 backdrop-blur-sm md:h-12 md:gap-2 md:px-3">
-      {/* Left: Logo + Title */}
-      <div className="flex min-w-0 items-center gap-2">
-        <Drone className="size-5 text-primary" />
-        <span className="text-sm font-semibold tracking-tight sm:hidden">
+    <header className="relative z-20 flex h-[52px] shrink-0 items-center gap-2 border-b border-border bg-background px-3">
+      <div className="flex shrink-0 items-center gap-2.5 pr-1">
+        <a
+          href="https://fpvooe.com/"
+          target="_blank"
+          rel="noreferrer"
+          aria-label={t('backToWebsite')}
+          className="flex size-7 items-center justify-center rounded-[7px] bg-primary font-mono text-[10px] font-bold tracking-tight text-primary-foreground"
+        >
           FPV
+        </a>
+        <span className="whitespace-nowrap text-sm font-semibold tracking-tight">Track Designer</span>
+        <span className="rounded-full border border-strong-border px-[7px] py-px text-[11px] font-medium text-muted-foreground">
+          {t('beta')}
         </span>
-        <span className="hidden text-sm font-semibold tracking-tight sm:inline">
-          FPV-Track-Designer
-        </span>
-        <Badge variant="outline" className="hidden border-primary/40 bg-primary/10 px-1.5 py-0 text-[10px] font-medium text-primary sm:inline-flex">
-          Beta Version
-        </Badge>
       </div>
 
-      <Separator orientation="vertical" className="hidden h-6 sm:block" />
+      <Divider />
 
-      {/* Center: Undo/Redo */}
-      <div className="hidden items-center gap-0.5 md:flex md:gap-1">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={undo}
-              disabled={past.length === 0}
-              aria-label={t('undo')}
-            >
-              <Undo2 className="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            {t('undo')}{past.length > 0 && ` (${past.length})`}
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={redo}
-              disabled={future.length === 0}
-              aria-label={t('redo')}
-            >
-              <Redo2 className="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            {t('redo')}{future.length > 0 && ` (${future.length})`}
-          </TooltipContent>
-        </Tooltip>
+      <div className="flex gap-0.5">
+        <HeaderIconButton label={t('undo')} onClick={undo} disabled={!canUndo}>
+          <Undo2 />
+        </HeaderIconButton>
+        <HeaderIconButton label={t('redo')} onClick={redo} disabled={!canRedo}>
+          <Redo2 />
+        </HeaderIconButton>
       </div>
 
-      <Separator orientation="vertical" className="hidden h-6 md:block" />
+      <Divider />
 
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant={fpvModeActive ? 'secondary' : 'ghost'}
-            size="icon"
-            className="md:hidden"
-            onClick={onFpvToggle}
-            disabled={fpvDisabled}
-            aria-label={fpvModeActive ? t('fpvStop') : t('fpvStart')}
-          >
-            {fpvModeActive ? <Square className="size-4" /> : <Play className="size-4" />}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent className="max-w-xs">
-          {fpvModeActive
-            ? t('fpvStopDescription')
-            : t('fpvStartDescription')}
-        </TooltipContent>
-      </Tooltip>
+      <div className="flex min-w-0 shrink items-center gap-2 overflow-hidden">
+        {currentTrack && <TrackNameInput />}
+        <a
+          href="https://fpvooe.com/"
+          target="_blank"
+          rel="noreferrer"
+          className="hidden whitespace-nowrap rounded-full bg-primary/12 px-2 py-0.5 text-[11px] font-medium text-amber-400 hover:bg-primary/20 sm:inline"
+        >
+          #fpvooe
+        </a>
+        {currentTrack && (isTrackModified ? (
+          <HeaderIconButton label={t('unsavedStateSave')} onClick={openSaveDialog} className="text-amber-400">
+            <Save />
+          </HeaderIconButton>
+        ) : (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span aria-label={t('savedState')} className="flex shrink-0 px-1 text-subtle-foreground">
+                <CloudCheck className="size-4" />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>{t('savedState')}</TooltipContent>
+          </Tooltip>
+        ))}
+        <HeaderIconButton label={t('shuffleTrack')} onClick={onShuffle}>
+          <Dice5 />
+        </HeaderIconButton>
+      </div>
 
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant={fpvModeActive ? 'secondary' : 'ghost'}
-            size="sm"
-            className="hidden gap-1.5 md:inline-flex"
-            onClick={onFpvToggle}
-            disabled={fpvDisabled}
-          >
-            {fpvModeActive ? <Square className="size-3.5" /> : <Play className="size-3.5" />}
-            <span>{fpvModeActive ? t('fpvStopShort') : t('fpvFlight')}</span>
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent className="max-w-xs">
-          {fpvModeActive
-            ? t('fpvStopDescription')
-            : t('fpvStartDescription')}
-        </TooltipContent>
-      </Tooltip>
+      <div className="min-w-2 flex-1" />
 
-      <Separator orientation="vertical" className="hidden h-6 md:block" />
-
-      {/* Center: Pole counter (badge with click-popover) */}
       <PoleCounter />
 
-      <Separator orientation="vertical" className="hidden h-6 md:block" />
+      <Popover open={exportOpen} onOpenChange={setExportOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" className="h-8 gap-2 border-border bg-transparent px-3 text-[13px] font-medium hover:bg-secondary">
+            <Download />
+            <span className="hidden md:inline">{t('exportMenu')}</span>
+            <ChevronDown className="text-subtle-foreground" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="end" sideOffset={6} className="w-56 gap-0 border-border bg-background p-1 shadow-xl shadow-black/50">
+          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{t('exportTrackHeading')}</div>
+          <button type="button" className={menuItemClass} onClick={handleExport} disabled={!currentTrack}>
+            <FileJson className="size-4 text-muted-foreground" />
+            {t('exportAsJson')}
+          </button>
+          <div className="-mx-1 my-1 h-px bg-border" />
+          <button
+            type="button"
+            className={menuItemClass}
+            onClick={() => {
+              setExportOpen(false)
+              importInputRef.current?.click()
+            }}
+          >
+            <Upload className="size-4 text-muted-foreground" />
+            {t('importEllipsis')}
+          </button>
+        </PopoverContent>
+      </Popover>
+      <input ref={importInputRef} type="file" accept=".json" className="hidden" onChange={handleImport} aria-label={t('importJson')} />
 
-      {/* Center: View toggles */}
-        <div className="hidden items-center gap-3 text-xs text-muted-foreground md:flex">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <label className="flex items-center gap-1.5">
-              <input
-                type="checkbox"
-                className="size-3 accent-primary"
-                checked={config.showGrid}
-                onChange={(e) => setShowGrid(e.target.checked)}
-              />
-              <span>{t('showGrid')}</span>
-            </label>
-          </TooltipTrigger>
-          <TooltipContent className="max-w-xs">
-            {t('showGridDescription')}
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <label className="flex items-center gap-1.5">
-              <input
-                type="checkbox"
-                className="size-3 accent-primary"
-                checked={config.snapGatesToGrid}
-                onChange={(e) => handleSnapGatesToGridChange(e.target.checked)}
-              />
-              <span>{t('gridSnap')}</span>
-            </label>
-          </TooltipTrigger>
-          <TooltipContent className="max-w-xs">
-            {t('gridSnapDescription')}
-          </TooltipContent>
-        </Tooltip>
-        {config.snapGatesToGrid && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex items-center gap-1.5 rounded-full border border-border/80 bg-surface/80 px-2 py-1 shadow-sm">
-                <span className="whitespace-nowrap text-[11px] font-medium text-foreground">
-                  {t('gridSnapPrecision')}
-                </span>
-                <div className="flex rounded-full bg-background/70 p-0.5" role="group" aria-label={t('gridSnapPrecision')}>
-                  {SNAP_GRID_SIZES.map((size) => {
-                    const isActive = config.snapGridSize === size
-                    return (
-                      <button
-                        key={size}
-                        type="button"
-                        onClick={() => handleSnapGridSizeChange(size)}
-                        aria-pressed={isActive}
-                        aria-label={snapGridSizeLabels[size]}
-                        className={`rounded-full px-2 py-0.5 text-[11px] font-medium tabular-nums transition-colors ${isActive
-                          ? 'bg-primary text-primary-foreground shadow-sm'
-                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
-                      >
-                        {`${size.toLocaleString(language === 'de' ? 'de-DE' : 'en-US')} m`}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent className="max-w-xs">
-              {t('gridSnapPrecisionDescription')}
-            </TooltipContent>
-          </Tooltip>
-        )}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <label className="flex items-center gap-1.5">
-              <input
-                type="checkbox"
-                className="size-3 accent-primary"
-                checked={config.showFlightPath}
-                onChange={(e) => setShowFlightPath(e.target.checked)}
-              />
-              <span>{t('flightPath')}</span>
-            </label>
-          </TooltipTrigger>
-          <TooltipContent className="max-w-xs">
-            {t('flightPathDescription')}
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <label className="flex items-center gap-1.5">
-              <input
-                type="checkbox"
-                className="size-3 accent-primary"
-                checked={config.showOpeningLabels}
-                onChange={(e) => setShowOpeningLabels(e.target.checked)}
-              />
-              <span>{t('passThroughs')}</span>
-            </label>
-          </TooltipTrigger>
-          <TooltipContent className="max-w-xs">
-            {t('passThroughsDescription')}
-          </TooltipContent>
-        </Tooltip>
-      </div>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            onClick={toggleLanguage}
+            aria-label={t('languageToggleLabel')}
+            className="h-8 gap-1.5 px-2.5 text-[13px] font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
+          >
+            <Languages />
+            {language.toUpperCase()}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{t('languageToggleTooltip')}</TooltipContent>
+      </Tooltip>
 
-      {/* Right: Track name + actions */}
-      <div className="ml-auto flex min-w-0 items-center gap-1 md:gap-2">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <a
-              href="https://fpvooe.com/"
-              target="_blank"
-              rel="noreferrer"
-              className="hidden rounded-full border border-primary/20 bg-primary/10 px-2 py-1 text-xs font-semibold text-primary transition-colors hover:border-primary/40 hover:bg-primary/15 sm:inline-flex"
-            >
-              #fpvooe
-            </a>
-          </TooltipTrigger>
-          <TooltipContent>{t('backToWebsite')}</TooltipContent>
-        </Tooltip>
+      <HeaderIconButton label={t('help')} onClick={onShortcutsClick}>
+        <CircleHelp />
+      </HeaderIconButton>
 
-        {currentTrack && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Badge variant="secondary" className="hidden max-w-48 truncate md:inline-flex">
-                {currentTrack.name}
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent>{currentTrack.name}</TooltipContent>
-          </Tooltip>
-        )}
-
-        <Separator orientation="vertical" className="hidden h-6 sm:block" />
-
-        {/* Import */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <label>
-              <Button variant="ghost" size="icon" asChild>
-                <span>
-                  <Upload className="size-4" />
-                </span>
-              </Button>
-              <input
-                type="file"
-                accept=".json"
-                className="hidden"
-                onChange={handleImport}
-              />
-            </label>
-          </TooltipTrigger>
-          <TooltipContent className="max-w-xs">{t('importJson')}</TooltipContent>
-        </Tooltip>
-
-        {/* Export */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" onClick={handleExport} disabled={!currentTrack}>
-              <Download className="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent className="max-w-xs">{t('exportJson')}</TooltipContent>
-        </Tooltip>
-
-        <Separator orientation="vertical" className="hidden h-6 sm:block" />
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleLanguage}
-              aria-label={t('languageToggleLabel')}
-            >
-              <span aria-hidden="true" className="text-base leading-none">
-                {language === 'de' ? '🇬🇧' : '🇩🇪'}
-              </span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{t('languageToggleTooltip')}</TooltipContent>
-        </Tooltip>
-
-        {/* Help */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" onClick={onShortcutsClick}>
-              <CircleHelp className="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{t('help')}</TooltipContent>
-        </Tooltip>
-      </div>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            onClick={onFpvToggle}
+            disabled={fpvDisabled}
+            className="h-8 gap-1.5 px-3.5 text-[13px] font-semibold hover:bg-amber-400"
+          >
+            {fpvModeActive ? <Square /> : <Play />}
+            <span className="hidden sm:inline">{fpvModeActive ? t('fpvStopShort') : t('fpvFlight')}</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs">
+          {fpvModeActive ? t('fpvStopDescription') : t('fpvStartDescription')}
+        </TooltipContent>
+      </Tooltip>
     </header>
   )
 }

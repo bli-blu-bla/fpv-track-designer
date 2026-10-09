@@ -1083,3 +1083,29 @@ describe('TrackSlice - generationConfig and isTrackModified', () => {
     expect(store.getState().pendingDestructiveAction).toEqual({ reason: 'load' })
   })
 })
+
+describe('TrackSlice - renameTrack', () => {
+  it('renames undoably and marks the track dirty', () => {
+    const store = createTestStore()
+    store.getState().setTrack(createTestTrack([createTestGate('gate-1')]))
+
+    store.getState().renameTrack('  Vereinsrennen  ')
+    expect(store.getState().currentTrack?.name).toBe('Vereinsrennen')
+    expect(store.getState().isTrackModified).toBe(true)
+
+    store.getState().undo()
+    expect(store.getState().currentTrack?.name).toBe('Test Track')
+  })
+
+  it('ignores empty or unchanged names', () => {
+    const store = createTestStore()
+    store.getState().setTrack(createTestTrack([createTestGate('gate-1')]))
+    const historyLength = store.getState().past.length
+
+    store.getState().renameTrack('   ')
+    store.getState().renameTrack('Test Track')
+
+    expect(store.getState().past).toHaveLength(historyLength)
+    expect(store.getState().isTrackModified).toBe(false)
+  })
+})

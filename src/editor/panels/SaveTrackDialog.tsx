@@ -17,17 +17,18 @@ import { useTranslation } from '@/i18n'
 
 interface SaveTrackDialogProps {
   /**
-   * When provided, the dialog is fully controlled by the parent (legacy
-   * usage in `LeftToolPanel.tsx` fallback path). When omitted, the dialog
+   * When provided, the dialog is fully controlled by the parent. When omitted, the dialog
    * binds to the global store state (`isSaveDialogOpen`) and dispatches
    * `openSaveDialog` / `dismissSaveDialog` / `markTrackSaved` actions –
    * which is the production wiring used by `App.tsx`.
    */
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  /** Returns a preview image of the current track for the gallery. */
+  captureThumbnail?: () => string | null
 }
 
-export const SaveTrackDialog: FC<SaveTrackDialogProps> = ({ open: openProp, onOpenChange }) => {
+export const SaveTrackDialog: FC<SaveTrackDialogProps> = ({ open: openProp, onOpenChange, captureThumbnail }) => {
   const { t } = useTranslation()
   const currentTrack = useAppStore((state) => state.currentTrack)
   const syncCurrentTrack = useAppStore((state) => state.syncCurrentTrack)
@@ -69,7 +70,7 @@ export const SaveTrackDialog: FC<SaveTrackDialogProps> = ({ open: openProp, onOp
     if (!currentTrack) return
     const trackName = name || currentTrack.name
     const updated = { ...currentTrack, name: trackName, updatedAt: new Date().toISOString() }
-    saveTrack(updated, config)
+    saveTrack(updated, config, { thumbnail: captureThumbnail?.() })
     syncCurrentTrack(updated)
     window.dispatchEvent(new CustomEvent('track-saved'))
     if (isControlled) {

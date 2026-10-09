@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Copy, Trash2, Play, RefreshCw, Ghost } from 'lucide-react'
+import { Copy, FolderOpen, ImageOff, Trash2 } from 'lucide-react'
 
 import { useAppStore } from '@/editor/store'
-import { loadTrack, listTracks, deleteTrack, saveTrack, type SavedTrackInfo } from '@/editor/storage'
+import { loadTrack, listTracks, deleteTrack, saveTrack, loadTrackThumbnail, saveTrackThumbnail, type SavedTrackInfo } from '@/editor/storage'
 
 import {
   Dialog,
@@ -12,28 +12,25 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
-import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
-import { Badge } from '@/components/ui/badge'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
 import { useTranslation } from '@/i18n'
 
 interface TrackGalleryProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  /** Called after a saved track replaced the current one. */
+  onTrackOpened?: () => void
 }
 
-export function TrackGallery({ open, onOpenChange }: TrackGalleryProps) {
-  const { t } = useTranslation()
+function formatSavedDate(iso: string, language: string): string {
+  return new Date(iso).toLocaleDateString(language === 'de' ? 'de-DE' : 'en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })
+}
+
+/** Saved tracks with preview images; lives in the "Meine Tracks" side panel. */
+export function TrackGallery({ onTrackOpened }: TrackGalleryProps) {
+  const { t, language } = useTranslation()
   const currentTrack = useAppStore((state) => state.currentTrack)
   const replaceTrack = useAppStore((state) => state.replaceTrack)
   const setConfig = useAppStore((state) => state.setConfig)
@@ -43,13 +40,6 @@ export function TrackGallery({ open, onOpenChange }: TrackGalleryProps) {
   const [trackToDuplicate, setTrackToDuplicate] = useState<SavedTrackInfo | null>(null)
   const [duplicateName, setDuplicateName] = useState('')
   const refreshTracks = useCallback(() => setTracks(listTracks()), [])
-
-  useEffect(() => {
-    if (open) {
-      const timeoutId = window.setTimeout(refreshTracks, 0)
-      return () => window.clearTimeout(timeoutId)
-    }
-  }, [open, refreshTracks])
 
   useEffect(() => {
     window.addEventListener('track-saved', refreshTracks)
@@ -64,7 +54,7 @@ export function TrackGallery({ open, onOpenChange }: TrackGalleryProps) {
       if (result) {
         setConfig(result.config)
         replaceTrack(result.track)
-        onOpenChange(false)
+        onTrackOpened?.()
       }
       refreshTracks()
     })
@@ -122,6 +112,8 @@ export function TrackGallery({ open, onOpenChange }: TrackGalleryProps) {
     // Persist the duplicate to localStorage immediately so it appears in the
     // gallery list even if the user cancels switching to it.
     saveTrack(copiedTrack, saved.config)
+    const thumbnail = loadTrackThumbnail(trackToDuplicate.id)
+    if (thumbnail) saveTrackThumbnail(copiedTrack.id, thumbnail)
     window.dispatchEvent(new CustomEvent('track-saved'))
     setTrackToDuplicate(null)
     setDuplicateName('')
@@ -132,108 +124,93 @@ export function TrackGallery({ open, onOpenChange }: TrackGalleryProps) {
 
       setConfig(saved.config)
       replaceTrack(copiedTrack)
-      onOpenChange(false)
+      onTrackOpened?.()
     })
   }
 
-  const refresh = refreshTracks
+  const iconButtonClass = 'flex size-8 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground'
 
   return (
     <>
-      <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="left" className="w-[min(100dvw,24rem)] sm:max-w-md">
-        <SheetHeader className="flex-row items-center justify-between">
-          <SheetTitle>{t('galleryTitle')}</SheetTitle>
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            onClick={refresh}
-            title={t('refresh')}
-          >
-            <RefreshCw />
-          </Button>
-        </SheetHeader>
+      {tracks.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 py-10 text-center">
+          <FolderOpen className="size-8 text-subtle-foreground" />
+          <p className="text-xs text-subtle-foreground">{t('noSavedTracks')}</p>
+        </div>
+      ) : (
+        <ul className="flex flex-col gap-2.5">
+          {[...tracks].reverse().map((trackInfo) => {
+            const isCurrent = currentTrack?.id === trackInfo.id
+            const thumbnail = loadTrackThumbnail(trackInfo.id)
+            const meta = [
+              trackInfo.gateCount !== undefined ? t('galleryObjects', { count: trackInfo.gateCount }) : null,
+              trackInfo.poleCount !== undefined ? t('polesCount', { count: trackInfo.poleCount }) : null,
+              formatSavedDate(trackInfo.updatedAt, language),
+            ].filter(Boolean).join(' · ')
 
-        <Separator />
-
-        <ScrollArea className="min-h-0 flex-1 pr-4">
-          {tracks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Ghost className="mb-3 size-10 text-muted-foreground/40" />
-              <p className="text-sm text-muted-foreground">{t('noSavedTracks')}</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3 py-4">
-              {tracks.map((trackInfo) => {
-                const isCurrent = currentTrack?.id === trackInfo.id
-                return (
-                  <Card
-                    key={trackInfo.id}
-                    className={
-                      isCurrent
-                        ? 'border-primary ring-1 ring-primary'
-                        : 'border-border/50'
-                    }
-                  >
-                    <CardContent className="flex flex-col gap-3 p-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-sm font-semibold text-foreground">
-                            {trackInfo.name}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(trackInfo.updatedAt).toLocaleDateString(undefined, {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                            })}
-                          </span>
-                        </div>
-                        {isCurrent && (
-                          <Badge variant="default" className="text-[10px]">
-                            {t('current')}
-                          </Badge>
-                        )}
-                      </div>
-
-                      <div className="grid gap-2 sm:flex sm:items-center">
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => handleLoad(trackInfo.id)}
-                          className="sm:flex-1"
-                        >
-                          <Play />
-                          {t('load')}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDuplicateClick(trackInfo)}
-                          className="w-full sm:w-auto"
-                        >
-                          <Copy />
-                          {t('duplicate')}
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
+            return (
+              <li
+                key={trackInfo.id}
+                className={cn(
+                  'overflow-hidden rounded-lg border transition-colors',
+                  isCurrent ? 'border-ring' : 'border-border hover:bg-muted',
+                )}
+              >
+                <button
+                  type="button"
+                  onClick={() => handleLoad(trackInfo.id)}
+                  aria-label={`${trackInfo.name} – ${t('load')}`}
+                  className="block w-full text-left"
+                >
+                  {thumbnail ? (
+                    <img src={thumbnail} alt="" className="aspect-[16/10] w-full bg-muted object-cover" />
+                  ) : (
+                    <span className="flex aspect-[16/10] w-full items-center justify-center bg-[repeating-linear-gradient(135deg,var(--color-muted)_0_8px,#1f1f23_8px_16px)]">
+                      <ImageOff className="size-5 text-subtle-foreground" />
+                    </span>
+                  )}
+                </button>
+                <div className="flex items-start gap-2 p-3">
+                  <div className="flex min-w-0 flex-1 flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate font-medium">{trackInfo.name}</span>
+                      {isCurrent && (
+                        <span className="shrink-0 rounded-full bg-foreground px-[7px] py-px text-[11px] font-medium text-background">
+                          {t('current')}
+                        </span>
+                      )}
+                    </div>
+                    <span className="truncate font-mono text-[11px] text-subtle-foreground">{meta}</span>
+                  </div>
+                  <div className="flex shrink-0 gap-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" onClick={() => handleDuplicateClick(trackInfo)} aria-label={t('duplicate')} className={iconButtonClass}>
+                          <Copy className="size-3.5" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>{t('duplicate')}</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
                           onClick={() => handleDeleteClick(trackInfo)}
-                          className="w-full sm:w-auto"
+                          aria-label={t('delete')}
+                          className={cn(iconButtonClass, 'hover:border-destructive/35 hover:bg-destructive/10 hover:text-red-400')}
                         >
-                          <Trash2 />
-                          {t('delete')}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
-          )}
-        </ScrollArea>
-        </SheetContent>
-      </Sheet>
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>{t('delete')}</TooltipContent>
+                    </Tooltip>
+                  </div>
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      )}
 
       <Dialog open={trackToDelete !== null} onOpenChange={handleDeleteDialogOpenChange}>
         <DialogContent>

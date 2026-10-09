@@ -1,5 +1,4 @@
 import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
 import { useAppStore } from '@/editor/store'
 import { generateTrack } from '@/core/track/generator'
 import { extractGenerationConfig, hasConfigDrift } from '@/core/track/generationConfig'
@@ -30,8 +29,7 @@ export function ApplyConfigFooter() {
 
   return (
     <>
-      <Separator />
-      <div className="flex flex-col gap-2 p-4 animate-in slide-in-from-bottom-2 fade-in-0 duration-200">
+      <div className="flex flex-col gap-2 border-t border-border p-4 animate-in slide-in-from-bottom-2 fade-in-0 duration-200">
         <p className="text-xs text-muted-foreground">
           {t('configChanged')}
         </p>

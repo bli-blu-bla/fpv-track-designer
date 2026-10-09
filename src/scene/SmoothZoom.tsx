@@ -5,6 +5,8 @@ import type { OrbitControls } from 'three-stdlib'
 
 interface SmoothZoomProps {
   controlsRef: React.RefObject<OrbitControls | null>
+  /** Changing this re-reads the zoom distance from the camera, e.g. after a camera preset moved it. */
+  resyncKey?: string
   minDistance?: number
   maxDistance?: number
   lerpSpeed?: number
@@ -18,6 +20,7 @@ interface SmoothZoomProps {
  */
 export function SmoothZoom({
   controlsRef,
+  resyncKey,
   minDistance = 2,
   maxDistance = 200,
   lerpSpeed = 5,
@@ -31,7 +34,7 @@ export function SmoothZoom({
     if (controls) {
       targetDistRef.current = camera.position.distanceTo(controls.target)
     }
-  }, [camera, controlsRef])
+  }, [camera, controlsRef, resyncKey])
 
   // Capture wheel events for smooth zoom
   useEffect(() => {

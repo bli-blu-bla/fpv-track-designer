@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { saveTrack, loadTrack, listTracks, deleteTrack, autoSave } from './storage'
+import { saveTrack, loadTrack, listTracks, deleteTrack, autoSave, loadTrackThumbnail, saveTrackThumbnail } from './storage'
 import type { Track, Config } from '@/core/types'
 import { createDefaultGateOpenings } from '@/core/gates/gateOpenings'
 
@@ -185,11 +185,47 @@ describe('storage', () => {
       const config = createTestConfig()
 
       // Mock localStorage.setItem to throw
-      vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      vi.spyOn(localStorage, 'setItem').mockImplementationOnce(() => {
         throw new DOMException('Quota exceeded', 'QuotaExceededError')
       })
 
       expect(() => autoSave(track, config)).not.toThrow()
+    })
+  })
+
+  describe('thumbnails and gallery stats', () => {
+    it('stores gate and pole counts in the list and the thumbnail under its own key', () => {
+      const track = createTestTrack()
+      saveTrack(track, createTestConfig(), { thumbnail: 'data:image/jpeg;base64,AAAA' })
+
+      expect(listTracks()[0]).toMatchObject({ gateCount: track.gates.length })
+      expect(typeof listTracks()[0].poleCount).toBe('number')
+      expect(loadTrackThumbnail(track.id)).toBe('data:image/jpeg;base64,AAAA')
+    })
+
+    it('keeps the previous thumbnail when saving without one', () => {
+      const track = createTestTrack()
+      saveTrack(track, createTestConfig(), { thumbnail: 'data:image/jpeg;base64,AAAA' })
+      saveTrack({ ...track, name: 'Renamed' }, createTestConfig())
+
+      expect(loadTrackThumbnail(track.id)).toBe('data:image/jpeg;base64,AAAA')
+    })
+
+    it('rejects anything that is not a JPEG data URL', () => {
+      saveTrackThumbnail('x', 'javascript:alert(1)')
+      localStorage.setItem('fpv-track-thumb-y', 'https://example.com/a.png')
+
+      expect(loadTrackThumbnail('x')).toBeNull()
+      expect(loadTrackThumbnail('y')).toBeNull()
+    })
+
+    it('removes the thumbnail together with the track', () => {
+      const track = createTestTrack()
+      saveTrack(track, createTestConfig(), { thumbnail: 'data:image/jpeg;base64,AAAA' })
+
+      deleteTrack(track.id)
+
+      expect(loadTrackThumbnail(track.id)).toBeNull()
     })
   })
 })

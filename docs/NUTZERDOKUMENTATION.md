@@ -41,11 +41,13 @@ Alles Weitere in dieser Anleitung baut darauf auf.
 
 ## 2. Die Oberfläche im Überblick
 
-Die Oberfläche besteht aus drei Bereichen:
+Die Oberfläche besteht aus diesen Bereichen:
 
-- **TopBar (oben):** Rückgängig/Wiederholen, FPV-Flug, JSON Import/Export, Anzeige-Optionen (Grid, Grid-Snap, Snap-Genauigkeit, Flugbahn, Durchflüge), Stangenzähler, Sprache, Hilfe.
-- **Linke Werkzeugleiste:** Shuffle (neu generieren), Speichern, Track Teilen, Galerie, Einstellungen, Design.
-- **3D-Szene (Mitte):** die Strecke selbst. Angeklickt erscheinen direkt am Gate die Bearbeitungswerkzeuge.
+- **Kopfzeile (oben):** Rückgängig/Wiederholen, Streckenname (zum Umbenennen anklicken), Speicherstatus (Wolke = gespeichert, Diskette = ungespeicherte Änderungen speichern), Shuffle (Würfel), Stangenzähler, **Exportieren**-Menü (JSON-Export und Import), Sprache, Hilfe und der Button **FPV-Flug**.
+- **Symbolleiste (ganz links):** öffnet die Seitenpanels **Bibliothek**, **Ebenen**, **Meine Tracks** (Galerie), **Feld** und **Darstellung** sowie den Dialog **Track teilen**. Unten: **Tastenkürzel**.
+- **Seitenpanel (links):** der Inhalt des gewählten Panels; mit dem **×** schließen.
+- **3D-Szene (Mitte):** die Strecke selbst. Oben links wechselst du zwischen **3D** und **Draufsicht**, unten liegt die Leiste mit den Anzeige-Optionen. Angeklickt erscheinen direkt am Gate die Bearbeitungswerkzeuge.
+- **Inspektor (rechts, ab ca. 1024 px Fensterbreite):** ohne Auswahl die Kennzahlen der Strecke (Objekte, Stangen, Rundenlänge, Feld); mit einem ausgewählten Gate dessen Position, Höhe, Rotation und Durchflug-Reihenfolge sowie **Duplizieren** und **Löschen**.
 
 ---
 
@@ -55,7 +57,7 @@ Es gibt zwei Wege zu einem Kurs:
 
 ### 3.1 Zufällig generieren („Shuffle")
 
-- Klick auf **Shuffle** in der linken Werkzeugleiste oder drücke die Taste **`S`**.
+- Klick auf das **Würfel-Symbol** in der Kopfzeile oder drücke die Taste **`S`**.
 - Aus deinen Einstellungen (Gate-Anzahl je Typ und Feldgröße) wird eine **neue, zufällige Strecke** erzeugt.
 - Der Generator achtet auf einen **Mindestabstand von 3 Metern** zwischen den Gates und richtet die Gates in **30°-Schritten** aus.
 - Ein **Start/Ziel-Gate** wird dabei bevorzugt zuerst an den Feldrand gesetzt.
@@ -70,10 +72,10 @@ Gespeicherte Strecken lädst du über die **Galerie** wieder (siehe [Abschnitt 1
 
 ## 4. Einstellungen (Gate-Anzahl & Feldgröße)
 
-Öffne links die **Einstellungen** (Zahnrad). Der Bereich **Strecken-Einstellungen** enthält die Karte **Kurskonfiguration**:
+Öffne links das Panel **Feld** (Regler-Symbol):
 
 - **Gate-Anzahl:** ein Zahlenfeld pro Gate-Typ. Trage ein, wie viele Gates welchen Typs generiert werden sollen (0 = nicht verwenden).
-- **Feldeinstellungen → Feldgröße (m):** **Breite** und **Länge** des Spielfelds.
+- **Feldgröße (m):** **Breite** und **Länge** des Spielfelds.
 - **Auf Standard zurücksetzen:** setzt die Konfiguration auf die Werkseinstellungen zurück.
 
 **Anwenden:** Änderst du Werte, erscheint der Hinweis, dass die Kurskonfiguration geändert wurde. Mit **„Neue Kurskonfiguration anwenden"** wird daraus eine neue Strecke generiert. Da dabei die aktuelle Strecke ersetzt wird, greift auch hier der Nachfrage-Dialog bei ungespeicherten Änderungen.
@@ -82,7 +84,7 @@ Gespeicherte Strecken lädst du über die **Galerie** wieder (siehe [Abschnitt 1
 
 > **Hinweis:** Eine separate **Gate-Größe** gibt es in der aktuellen Version nicht – die Gate-Abmessungen sind fest. Die Anzahl der Gates und die Feldgröße sind die Stellschrauben.
 
-### 4.1 Anzeige-Optionen (in der TopBar)
+### 4.1 Anzeige-Optionen (Leiste unten in der Szene)
 
 Diese Optionen ändern nur die Darstellung, nicht die Strecke:
 
@@ -90,9 +92,10 @@ Diese Optionen ändern nur die Darstellung, nicht die Strecke:
 | --- | --- |
 | **Grid anzeigen** | blendet das Boden-Grid (1-m-Zellen, 5-m-Markierungen) ein. Standardmäßig aus. |
 | **Grid-Snap** | Gates rasten beim Verschieben auf einem Positions-Grid ein. Die Drehung bleibt unabhängig davon bei 15°-Schritten. |
-| **Snap-Genauigkeit** | wie grob eingerastet wird: **Fein · 0,3 m**, **1/2 Feld · 0,5 m** oder **1 Feld · 1,0 m**. |
+| **Snap-Genauigkeit** | erscheint bei aktivem Snap: **0,3 m**, **0,5 m** oder **1 m**. |
 | **Flugbahn** | zeigt die Ideallinie durch alle Gates inkl. Richtungspfeilen. |
 | **Durchflüge** | markiert an jedem Gate die Reihenfolge der Durchflüge und die Ein-/Ausflugseite. |
+| **Ansicht zurücksetzen** | bringt die Kamera zurück in die Ausgangsposition der gewählten Ansicht (3D oder Draufsicht). |
 
 ---
 
@@ -116,6 +119,12 @@ Der Designer kennt **11 feste Gate-Typen**. Jeder Typ hat eine eigene Form und e
 
 > **Tipp:** Hurdle, Dive-Gate und Tunnel benötigen **keine Stangen** – sie erscheinen im Stangenzähler unter „Nicht aus Stangen baubar".
 
+### 5.1 Gates aus der Bibliothek platzieren
+
+Im Panel **Bibliothek** findest du alle Gate-Typen, filterbar nach **Gates**, **Flaggen** und **Hindernissen** oder per Suche. Ein Klick setzt das Gate in die **Feldmitte**, hängt es ans Ende der Durchflugreihenfolge und wählt es aus. Das Start/Ziel-Gate gibt es nur einmal pro Strecke.
+
+Das Panel **Ebenen** listet alle Gates mit ihrer Durchflugnummer; ein Klick wählt das Gate aus (mit `Shift`/`Cmd`/`Ctrl` mehrere).
+
 ---
 
 ## 6. Gates bearbeiten
@@ -128,6 +137,8 @@ So bearbeitest du einzelne Gates direkt in der 3D-Szene:
 4. **Drehen:** Halte das Dreh-Symbol und ziehe seitlich. Die Drehung rastet in **15°-Schritten** ein.
 5. **Einfügen:** Klicke ein Gate an, wähle im Dialog **„Gate einfügen"** das Symbol **vorher** oder **nachher** und dann den **Gate-Typ**. Das neue Gate wird passend in die Durchflugreihenfolge eingefügt.
 6. **Löschen:** Wähle das Gate und drücke **`Backspace`** (öffnet den Bestätigungsdialog) oder nutze das Löschen-Symbol. Bestätigen mit **`Enter`** oder **„Gate löschen"**.
+
+Alternativ bearbeitest du ein ausgewähltes Gate präzise im **Inspektor** rechts: Position **X/Z** und Höhe in Metern, Rotation per Regler oder mit den Schnellwerten 0°/90°/180°/270°, Durchflug-Reihenfolge mit den Pfeilen, außerdem **Duplizieren** und **Löschen**.
 
 ### 6.1 Einflug-/Ausflugseite wechseln
 
@@ -145,7 +156,7 @@ Alle Bearbeitungsschritte lassen sich mit **`Cmd/Ctrl + Z`** rückgängig machen
 
 ## 7. Die Flugbahn verstehen
 
-Aktiviere oben **„Flugbahn"**. Die App berechnet dann die **Ideallinie** durch die Gates in der von dir festgelegten Durchflugreihenfolge:
+Aktiviere in der Leiste unten **„Flugbahn"**. Die App berechnet dann die **Ideallinie** durch die Gates in der von dir festgelegten Durchflugreihenfolge:
 
 - Kurven von Einflug zu Ausflug durch jedes Gate,
 - Übergänge zwischen den Gates (inkl. Sonderfällen wie U-Turns, H-Gate-Rückenlehne, Doppel-h-Stapel und Tunnelportale),
@@ -159,18 +170,18 @@ Die Flugbahn ist auch die Grundlage für den FPV-Flug.
 
 Das Highlight: die Strecke einmal aus der **Ich-Perspektive** durchfliegen.
 
-- **Starten:** Klicke oben auf **„FPV-Flug"** (Play-Symbol) in der TopBar.
+- **Starten:** Klicke oben rechts auf **„FPV-Flug"** (Play-Symbol).
 - Die Kamera fliegt automatisch die **Ideallinie** durch alle Gates – in deiner Durchflugreihenfolge.
-- **Stoppen:** Klick erneut auf den Button (**„FPV stoppen"**) oder drücke **`Escape`**. Am Ende der Strecke stoppt der Flug automatisch und die Editor-Kamera wird wiederhergestellt.
+- **Stoppen:** Klick erneut auf den Button (**„FPV stoppen"**), auf **„FPV stoppen · Esc"** in der Anzeige oben in der Szene, oder drücke **`Escape`**. Am Ende der Strecke stoppt der Flug automatisch und die Editor-Kamera wird wiederhergestellt.
 - **Voraussetzung:** Die Strecke braucht **mindestens 2 Gates**; sonst ist der Button deaktiviert.
 
-> **Hinweis:** Es gibt (noch) keine Fortschrittsanzeige oder Zeitanzeige während des Flugs – du siehst nur die Kamerafahrt und den Wechsel des Buttons. Die Fluggeschwindigkeit ist fest.
+> **Hinweis:** Es gibt (noch) keine Fortschritts- oder Zeitanzeige während des Flugs. Die Fluggeschwindigkeit ist fest.
 
 ---
 
 ## 9. Design & Themes
 
-Über **Design** (Paletten-Symbol) wählst du das visuelle Erscheinungsbild der 3D-Ansicht:
+Über das Panel **Darstellung** (Paletten-Symbol) wählst du das visuelle Erscheinungsbild der 3D-Ansicht:
 
 | Theme | Beschreibung |
 | --- | --- |
@@ -186,24 +197,24 @@ Das gewählte Theme wird mit der Strecke gespeichert und **beim Teilen mitgegebe
 
 ### 10.1 Speichern
 
-- **Speichern** in der Werkzeugleiste oder **`Cmd/Ctrl + S`**.
+- Das **Disketten-Symbol** neben dem Streckennamen (erscheint bei ungespeicherten Änderungen) oder **`Cmd/Ctrl + S`**.
 - Vergib einen **Streckennamen**; die Strecke wird **lokal im Browser** (`localStorage`) abgelegt.
+- Dabei wird automatisch ein **Vorschaubild** aus einer festen Schrägansicht erstellt, das in der Galerie erscheint. Strecken, die vor dieser Funktion gespeichert wurden, bekommen ihr Bild beim nächsten Speichern.
 - Gespeicherte Strecken bleiben an **diesen Browser auf diesem Gerät** gebunden.
 
 ### 10.2 Galerie
 
-Öffne die **Galerie** über die Werkzeugleiste oder die Taste **`G`**. Du siehst alle gespeicherten Strecken (Name + Datum) und kannst:
+Öffne das Panel **Meine Tracks** in der Symbolleiste oder drücke **`G`**. Du siehst alle gespeicherten Strecken (neueste zuerst) mit Vorschaubild, Name, Anzahl der Objekte und Stangen sowie Datum. Die gerade geladene Strecke ist mit **„Aktuell"** markiert. Du kannst:
 
-- **Laden** – ersetzt die aktuelle Strecke (Nachfrage bei ungespeicherten Änderungen),
-- **Duplizieren** – erstellt eine Kopie unter neuem Namen,
-- **Löschen** – entfernt die Strecke nach Bestätigung,
-- **Aktualisieren** – lädt die Liste neu.
+- **Laden** – Klick auf das Vorschaubild; ersetzt die aktuelle Strecke (Nachfrage bei ungespeicherten Änderungen),
+- **Duplizieren** – erstellt eine Kopie unter neuem Namen (inklusive Vorschaubild),
+- **Löschen** – entfernt die Strecke nach Bestätigung.
 
 ---
 
 ## 11. Import & Export (JSON)
 
-In der TopBar findest du **JSON exportieren** und **JSON importieren**:
+Im Menü **Exportieren** in der Kopfzeile findest du **Als JSON** und **Importieren…**:
 
 - **Export:** speichert die aktuell geladene Strecke (Gates, Reihenfolge, Konfiguration, Theme) als JSON-Datei zum Sichern oder Weitergeben.
 - **Import:** lädt eine zuvor exportierte oder von anderen Piloten erhaltene JSON-Datei. Beim Import wird die aktuelle Strecke ersetzt – bei ungespeicherten Änderungen fragt die App vorher nach.
@@ -215,7 +226,7 @@ In der TopBar findest du **JSON exportieren** und **JSON importieren**:
 
 Der schnellste Weg, eine Strecke weiterzugeben – ohne Datei, ohne Konto:
 
-1. Klicke links auf **„Track Teilen"**.
+1. Klicke in der Symbolleiste links auf das Teilen-Symbol (**„Track Teilen"**).
 2. Es öffnet sich der Dialog **„Track teilen"**. Er zeigt sofort den **„Langen Link"** – dieser funktioniert bereits sofort.
 3. Parallel versucht die App, einen **„Teilbaren Link"** (Kurzlink) zu erstellen. Solange das läuft: „Kurzlink wird erstellt. Bis dahin ist der lange Link bereits nutzbar." Bei Erfolg erscheint „Kurzlink erstellt.".
    - Klappt das Erstellen des Kurzlinks nicht, kannst du den langen Link trotzdem teilen.
@@ -241,7 +252,7 @@ Ist ein Link leer oder beschädigt, erscheint **„Track kann nicht geladen werd
 
 ## 13. Stangenzähler
 
-Oben in der TopBar zeigt der **Stangenzähler** die Gesamtzahl der für den Aufbau benötigten Stangen. Ein Klick öffnet die detaillierte **Stangenkalkulation**:
+Oben in der Kopfzeile zeigt der **Stangenzähler** (Hammer-Symbol) die Gesamtzahl der für den Aufbau benötigten Stangen. Ein Klick öffnet die detaillierte **Stangenkalkulation**:
 
 - Tabelle mit **Gate-Typ**, **Anzahl**, **Stangen pro Gate** und **Summe**,
 - separater Bereich **„Nicht aus Stangen baubar"** für Hurdle, Dive-Gate und Tunnel.
@@ -282,7 +293,7 @@ Während eines **FPV-Flugs** sind die Kamera-Bedienelemente deaktiviert, bis du 
 
 ## 16. Sprache umstellen
 
-Über das Sprach-Symbol in der TopBar wechselst du zwischen **Deutsch** und **Englisch**. Deine Wahl wird gespeichert und beim nächsten Besuch beibehalten.
+Über **DE/EN** in der Kopfzeile wechselst du zwischen **Deutsch** und **Englisch**. Deine Wahl wird gespeichert und beim nächsten Besuch beibehalten.
 
 ---
 

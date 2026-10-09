@@ -1,25 +1,11 @@
-import { useState } from 'react'
 import type { FocusEvent, KeyboardEvent } from 'react'
 import { useAppStore } from '@/editor/store'
 import { GATE_TYPES } from '@/core/types'
 import { GateIcon } from '@/editor/icons/GateIcon'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible'
-import { Separator } from '@/components/ui/separator'
-import { RotateCcw, ChevronDown } from 'lucide-react'
+import { RotateCcw } from 'lucide-react'
 import { useTranslation } from '@/i18n'
 
 
@@ -30,8 +16,6 @@ export function GateConfigPanel() {
   const setFieldSize = useAppStore((state) => state.setFieldSize)
   const resetToDefault = useAppStore((state) => state.resetToDefault)
 
-  const [quantitiesOpen, setQuantitiesOpen] = useState(true)
-  const [fieldOpen, setFieldOpen] = useState(true)
 
   const normalizeFieldSizeValue = (value: string): string | null => {
     const parsedValue = parseInt(value, 10)
@@ -70,107 +54,73 @@ export function GateConfigPanel() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('courseConfig')}</CardTitle>
-        <CardDescription>
-          {t('courseConfigDescription')}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Gate Quantities */}
-        <Collapsible open={quantitiesOpen} onOpenChange={setQuantitiesOpen}>
-          <CollapsibleTrigger className="flex w-full items-center justify-between text-sm font-medium text-foreground">
-            {t('gateQuantity')}
-            <ChevronDown
-              className={`h-4 w-4 transition-transform ${quantitiesOpen ? 'rotate-180' : ''}`}
+    <div className="flex flex-col gap-5">
+      <section className="flex flex-col gap-2">
+        <h3 className="text-xs font-medium text-muted-foreground">{t('fieldSize')}</h3>
+        <div className="grid grid-cols-2 gap-2.5">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="field-width" className="text-xs font-medium text-muted-foreground">
+              {t('width')}
+            </Label>
+            <Input
+              id="field-width"
+              type="number"
+              defaultValue={config.fieldSize.width}
+              key={`field-width-${config.fieldSize.width}`}
+              onBlur={commitFieldWidth}
+              onKeyDown={commitFieldSizeOnSubmit}
+              className="h-[34px] font-mono"
             />
-          </CollapsibleTrigger>
-          <CollapsibleContent className="space-y-3 pt-3">
-            {GATE_TYPES.map((type) => (
-              <div
-                key={type}
-                className="flex items-center justify-between gap-2"
-              >
-                <Label className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <GateIcon type={type} className="size-5 shrink-0" />
-                  <span>{gateTypeLabel(type)}</span>
-                </Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={config.gateQuantities[type]}
-                  onChange={(e) =>
-                    setGateQuantity(
-                      type,
-                      Math.max(0, parseInt(e.target.value) || 0)
-                    )
-                  }
-                  className="w-16 text-center"
-                />
-              </div>
-            ))}
-          </CollapsibleContent>
-        </Collapsible>
-
-        <Separator />
-
-        {/* Field Settings */}
-        <Collapsible open={fieldOpen} onOpenChange={setFieldOpen}>
-          <CollapsibleTrigger className="flex w-full items-center justify-between text-sm font-medium text-foreground">
-            {t('fieldSettings')}
-            <ChevronDown
-              className={`h-4 w-4 transition-transform ${fieldOpen ? 'rotate-180' : ''}`}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="field-height" className="text-xs font-medium text-muted-foreground">
+              {t('length')}
+            </Label>
+            <Input
+              id="field-height"
+              type="number"
+              defaultValue={config.fieldSize.height}
+              key={`field-height-${config.fieldSize.height}`}
+              onBlur={commitFieldHeight}
+              onKeyDown={commitFieldSizeOnSubmit}
+              className="h-[34px] font-mono"
             />
-          </CollapsibleTrigger>
-          <CollapsibleContent className="space-y-4 pt-3">
-            {/* Field Size */}
-            <div className="space-y-2">
-              <Label className="text-sm text-muted-foreground">
-                {t('fieldSize')}
+          </div>
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <h3 className="text-xs font-medium text-muted-foreground">{t('gateQuantity')}</h3>
+        <p className="text-xs leading-relaxed text-subtle-foreground">{t('courseConfigDescription')}</p>
+        <div className="-mx-2 flex flex-col gap-0.5">
+          {GATE_TYPES.map((type) => (
+            <div key={type} className="flex h-10 items-center justify-between gap-2 rounded-md px-2 hover:bg-muted">
+              <Label className="flex items-center gap-2.5 text-[13px] font-normal text-foreground">
+                <GateIcon type={type} className="size-5 shrink-0 text-muted-foreground" />
+                <span>{gateTypeLabel(type)}</span>
               </Label>
-              <div className="flex gap-2">
-                <div className="flex-1 space-y-1">
-                  <Label htmlFor="field-width" className="text-xs">
-                    {t('width')}
-                  </Label>
-                  <Input
-                    id="field-width"
-                    type="number"
-                    defaultValue={config.fieldSize.width}
-                    key={`field-width-${config.fieldSize.width}`}
-                    onBlur={commitFieldWidth}
-                    onKeyDown={commitFieldSizeOnSubmit}
-                  />
-                </div>
-                <div className="flex-1 space-y-1">
-                  <Label htmlFor="field-height" className="text-xs">
-                    {t('length')}
-                  </Label>
-                  <Input
-                    id="field-height"
-                    type="number"
-                    defaultValue={config.fieldSize.height}
-                    key={`field-height-${config.fieldSize.height}`}
-                    onBlur={commitFieldHeight}
-                    onKeyDown={commitFieldSizeOnSubmit}
-                  />
-                </div>
-              </div>
+              <Input
+                type="number"
+                min={0}
+                value={config.gateQuantities[type]}
+                aria-label={gateTypeLabel(type)}
+                onChange={(e) =>
+                  setGateQuantity(
+                    type,
+                    Math.max(0, parseInt(e.target.value) || 0)
+                  )
+                }
+                className="h-8 w-16 text-center font-mono"
+              />
             </div>
+          ))}
+        </div>
+      </section>
 
-            {/* Reset Button */}
-            <Button
-              variant="outline"
-              onClick={resetToDefault}
-              className="w-full"
-            >
-              <RotateCcw className="mr-2 h-4 w-4" />
-              {t('resetDefaults')}
-            </Button>
-          </CollapsibleContent>
-        </Collapsible>
-      </CardContent>
-    </Card>
+      <Button variant="outline" onClick={resetToDefault} className="w-full">
+        <RotateCcw />
+        {t('resetDefaults')}
+      </Button>
+    </div>
   )
 }
