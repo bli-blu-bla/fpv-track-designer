@@ -1,42 +1,43 @@
-# Scene — R3F Canvas, Camera & Themes
+# Scene — Shared R3F Rendering
 
-**Domain:** 3D scene orchestration, theme-specific environment, camera controls, flight path visualization
+**Domain:** The single `<Canvas>`, theme environments, camera controls, flight path, FPV fly-through and all gate meshes. Used by editor and viewer. ESLint forbids `@/editor` and `@/viewer` imports here.
 
 ## STRUCTURE
 ```
 scene/
-├── Scene.tsx              # Single Canvas owner and theme-specific scene composition
-├── Grid.tsx               # Ground plane + field boundary + drei Grid
-├── FlightPath.tsx         # Native THREE.Line segments + direction arrows
-├── FpvFlyThrough.tsx      # Automated first-person flight along the path
-├── SkyDome.tsx            # Shader sky dome anchored to camera
-├── CameraPan.tsx          # Space+click or right-click drag pan
-├── CameraVerticalPan.tsx  # Shift+click vertical pan
-└── SmoothZoom.tsx         # Wheel + middle-click smooth zoom
+├── Scene.tsx              # Single Canvas owner; props: track, config, gateComponent?, onGroundClick?, fpv flags
+├── SceneTheme.tsx         # SceneThemeContext + useSceneTheme(); provided inside the Canvas
+├── pointer.ts             # isCameraTouchGesture()
+├── Grid.tsx               # Ground, field boundary, grid lines; optional onGroundClick
+├── FlightPath.tsx         # One native THREE.Line per sampled segment + arrows
+├── FpvFlyThrough.tsx      # Automated first-person flight along sampled path
+├── NightBloom.tsx         # Bloom postprocessing, lazy-loaded for the night theme
+├── SkyDome.tsx            # Shader sky dome
+├── CameraPan.tsx          # Space+left-drag / right-drag pan
+├── CameraVerticalPan.tsx  # Shift+left-drag vertical pan
+├── SmoothZoom.tsx         # Wheel / middle-drag / pinch smooth zoom
+└── gates/
+    ├── Gate.tsx           # Read-only gate wrapper (shadows, optional callbacks + children overlay); SceneGateProps
+    ├── gateComponents.ts  # GATE_COMPONENTS: Record<GateType, component>
+    ├── gateComponentProps.ts
+    ├── GateOpeningIndicators.tsx / GateEntryIndicator.tsx
+    └── StandardGate, HGate, DoubleHGate, HurdleGate, DiveGate, DoubleGate, LadderGate,
+        StartFinishGate, Flag, FlagSmall, OctagonalTunnelGate (.tsx)
 ```
 
 ## CONVENTIONS
-- `Scene.tsx` owns the only `<Canvas>`; R3F hooks stay below it.
-- `Scene` accepts optional `track`, `configOverride`, and `readOnly` for the standalone viewer.
-- Camera controllers return `null` and are imperative via `useThree()`, refs, DOM listeners, and/or `useFrame()`.
-- `FlightPath` creates one native `THREE.Line` per sampled segment to avoid implicit connections between disjoint curves.
-- `Grid` uses drei's `<Grid>` helper and theme colors from `useSceneTheme()`.
-- Theme presets live in `src/types/theme.ts`; material helpers live in `src/utils/themeColors.ts`.
+- `Scene` renders exactly what it receives and reads no app store. Interactivity is injected: the editor passes `gateComponent={EditableGate}` and `onGroundClick`; the viewer passes neither.
+- Colors come from `useSceneTheme()`, never from a store. The provider sits inside `<Canvas>` and is derived from `config.theme`.
+- Gate meshes use `meshStandardMaterial` with solid colors from `getGateColors()`; selection is an emissive highlight.
+- Camera controllers are imperative (`useThree`, refs, DOM listeners, `useFrame`) and return `null`.
+- Per-type, non-visual data (openings, heights, poles) belongs in `src/core/gates/gateDefinitions.ts`, not here.
+- `src/editor/icons/GateIcon.tsx` mirrors each gate's silhouette; keep it in sync with geometry changes.
 
-## WHERE TO LOOK
-| Task | File |
-|------|------|
-| Add scene object | `Scene.tsx` Canvas children |
-| Change theme environments | `Scene.tsx`, `SkyDome.tsx`, `src/types/theme.ts` |
-| Change camera behavior | `CameraPan.tsx`, `CameraVerticalPan.tsx`, `SmoothZoom.tsx` |
-| Modify flight path rendering | `FlightPath.tsx`, `src/utils/flightPath.ts` |
-| Change FPV fly-through | `FpvFlyThrough.tsx` (route sampling, look-ahead camera, completion callback) |
-| Change ground/grid appearance | `Grid.tsx`, `src/types/theme.ts` |
-| Support viewer read-only mode | `Scene.tsx`, `src/components/viewer/ViewerApp.tsx` |
+## ANTI-PATTERNS
+- No second `<Canvas>` anywhere in the app.
+- No store reads or editor imports; pass data through props/context.
+- No per-gate sizing or custom gate types.
 
-## NOTES
-- CameraPan: Space+left-drag or right-drag; disables OrbitControls while active.
-- CameraVerticalPan: Shift+left-drag; keeps camera/target Y in sync.
-- SmoothZoom: wheel and middle-drag with frame-rate independent lerp.
-- Realistic theme uses sunset environment/shadows; night theme uses stars, environment, and bloom.
-- No direct scene/gate component test suites currently exist; verify through build and targeted utility tests.
+## TESTING
+- No direct R3F component suites; geometry/path logic is tested in `src/core`, handle math in `src/editor/gates`.
+- `src/viewer/ViewerApp.test.tsx` mocks `Scene` and asserts the viewer passes no interactive props.

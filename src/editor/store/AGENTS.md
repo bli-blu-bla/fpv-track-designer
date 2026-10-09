@@ -1,61 +1,41 @@
 # Store — Editor Zustand State
 
-**Domain:** Global editor state via Zustand slice pattern. The share viewer uses separate `src/viewer-store.ts`.
+**Domain:** Editor-only state, composed from slices into `useAppStore`. The viewer has its own `src/viewer/store.ts`.
 
 ## STRUCTURE
 ```
 store/
-├── index.ts        # Combined editor store (ConfigSlice + TrackSlice) with devtools
-├── configSlice.ts  # Config state, default preset, theme/display/generation settings
-└── trackSlice.ts   # Track state, selection, drag, undo/redo, unsaved-change flow
+├── index.ts                # createAppState, useAppStore (devtools), createEditorStore() for tests
+├── types.ts                # AppState = Config & Track & Selection & EditorUi & UnsavedChanges slices
+├── configSlice.ts          # config + setters; defaults from src/core/defaultConfig.ts
+├── trackSlice.ts           # currentTrack, past/future history, drag snapshot, isTrackModified, all edit actions
+├── selectionSlice.ts       # selectedGateId(s), selectGate, setSelectedGates
+├── editorUiSlice.ts        # delete dialog, pending insertion, sequence editor, isDraggingGate
+├── unsavedChangesSlice.ts  # requestDestructiveAction(reason) → Promise<boolean>, save dialog
+├── trackOperations.ts      # pure: normalizeTrack, touchTrack, snapping/clamping, move deltas, singleton rule
+└── history.ts              # pure: TrackHistoryEntry, pushHistory, MAX_HISTORY = 50, selection restore
 ```
 
 ## CONVENTIONS
-- Slice pattern: each editor domain gets a `StateCreator` slice file.
-- `src/store/index.ts` defines `type AppState = ConfigSlice & TrackSlice` and spreads slices into `create()`.
-- DevTools middleware is enabled only on the editor root store.
-- `import type` is required for type-only imports.
-- Config actions update nested config immutably; `theme` values come from `src/types/theme.ts`.
-- Undoable track actions call `pushHistory()` and set `isTrackModified: true`.
-
-## WHERE TO LOOK
-| Task | File |
-|------|------|
-| Add config setting | `configSlice.ts` + `src/types/config.ts` + schema serialization if persisted |
-| Add theme setting | `configSlice.ts`, `src/types/theme.ts`, `GateConfigPanel.tsx` |
-| Add track action | `trackSlice.ts` — use `pushHistory()` for undoable actions |
-| Add new editor domain slice | New slice file + `AppState` type + spread in `index.ts` |
-| Change viewer state | `src/viewer-store.ts`, not this directory |
-
-## KEY PATTERNS
-```typescript
-const action = (payload) => set((state) => {
-  const history = pushHistory(state)
-  return { ...newState, ...history, isTrackModified: true }
-})
-```
+- Every slice is `StateCreator<AppState, [], [], XSlice>` and may update other slices' keys in the same `set` (e.g. edits close gate dialogs via `CLOSED_GATE_DIALOGS`).
+- Undoable edits go through `applyEdit(state, edit)` in `trackSlice.ts`: snapshots history, normalizes + stamps `updatedAt`, sets `isTrackModified`. Return `null` from `edit` to abort without a history entry.
+- Live drag updates (`setGatePosition`, `setGateRotation`) skip history; `commitGateDrag()` pushes the drag-start snapshot once.
+- `import type` for type-only imports; `AppState` lives in `types.ts` to avoid import cycles.
 
 ## DIRTY-STATE / UNSAVED-CHANGES FLOW
-`isTrackModified` is the single source of truth for unsaved editor changes.
+`isTrackModified` is the single source of truth for unsaved changes. It is set by undoable edits and drag commits, reset by `setTrack`, `replaceTrack` and `markTrackSaved`, and stored in history entries so undo/redo restores it.
 
-- Set `true` by undoable mutations such as `updateGate`, `moveGate`, `moveSelectedGates`, `rotateGate`, `insertGateAtIndex`, `deleteSelectedGates`, `toggleGateDirection`, `moveGateSequenceEntry`, `snapAllGatesToGrid`, and drag commits.
-- Reset to `false` by `setTrack`, `replaceTrack`, and `markTrackSaved` after successful localStorage save.
-- Stored in `TrackHistoryEntry` so undo/redo restores the dirty flag of each snapshot.
+Destructive actions call `await requestDestructiveAction(reason)` with `reason` in `'shuffle' | 'apply-config' | 'import' | 'load' | 'duplicate'`:
+- clean track → resolves `true` immediately;
+- dirty track → `pendingDestructiveAction = { reason }` opens `panels/UnsavedChangesDialog`, which derives its text from the reason:
+  - **Abbrechen** → `cancelDestructiveAction()` → `false`
+  - **Verwerfen** → `confirmDestructiveAction()` → `true`
+  - **Zuerst speichern** → `saveBeforeDestructiveAction()` opens the save dialog; `markTrackSaved()` → `true`, `dismissSaveDialog()` → `false`
+- A newer request resolves an older pending one with `false`.
 
-Destructive actions (Shuffle, Import JSON, Gallery Load/Duplicate, Apply Config) MUST go through `requestDestructiveAction(action, title, description)`. If dirty, the action is staged in `pendingDestructiveAction` and `components/ui/UnsavedChangesDialog.tsx` presents:
-
-- **Abbrechen** → `cancelDestructiveAction()`
-- **Zuerst speichern** → `saveBeforeDestructiveAction()` opens the global save dialog; `markTrackSaved()` then runs the staged action
-- **Verwerfen** → `confirmDestructiveAction()`
-
-The global save dialog is store-driven via `isSaveDialogOpen`, `openSaveDialog()`, and `dismissSaveDialog()`.
-
-## NOTES
-- `commitGateDrag()` pushes the drag-start snapshot once, avoiding undo stack pollution during pointer moves.
-- Viewer state intentionally does not expose editor mutation actions.
+The promise resolver is kept in the slice closure, not in state, so the store stays serializable (no callbacks, no translated strings).
 
 ## TESTING
-- `trackSlice.test.ts` is the largest suite; keep new store invariants there.
-- Use isolated Zustand stores with `create<...>()(...)` for slice tests.
-- Cover dirty-state and history together: undo/redo must restore `isTrackModified` snapshots.
-- Destructive-action tests should exercise cancel, save-before-action, and discard paths.
+- Build stores with `createEditorStore()` and `setConfig()` for custom config; never hand-compose slices.
+- Cover dirty state and history together: undo/redo must restore `isTrackModified` snapshots.
+- Destructive-action tests await the returned promise for cancel, discard, save-first and dismiss paths.

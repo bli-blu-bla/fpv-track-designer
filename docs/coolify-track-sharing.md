@@ -27,10 +27,10 @@ If Nixpacks selects an unsupported Node patch version, deploy the viewer with `D
 This service serves the view-only build from `dist-viewer/index.html` at the domain root. It reads the encoded track data from the URL fragment:
 
 ```text
-https://sharedtrack.fpvooe.com/#<base64url-track-data>
+https://sharedtrack.fpvooe.com/#c.<compressed-compact-track>
 ```
 
-The fragment is decoded in the browser, so track data is not sent to the server as part of the HTTP request.
+New links use the compact `c.` format (`src/core/schemas/compactTrack.schema.ts`, about 200 characters for 11 gates). Older `z.` links and prefix-less base64url links still open. The fragment is decoded in the browser, so track data is not sent to the server as part of the HTTP request.
 
 ## Repository setup
 

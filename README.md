@@ -34,6 +34,7 @@ Eine ausführliche Anleitung steht in der [Nutzerdokumentation](docs/NUTZERDOKUM
 - [Vite](https://vite.dev/)
 - [React Three Fiber](https://r3f.docs.pmnd.rs/) und [Drei](https://github.com/pmndrs/drei)
 - [Zustand](https://zustand-demo.pmnd.rs/) für globalen State
+- [Zod](https://zod.dev/) für die Validierung importierter, gespeicherter und geteilter Tracks
 - [Tailwind CSS](https://tailwindcss.com/) v4
 - [shadcn/ui](https://ui.shadcn.com/) Komponenten
 - [Vitest](https://vitest.dev/) für Tests
@@ -122,18 +123,16 @@ Alternativ kann die Ansicht auch mit `Space + linke Maustaste ziehen` verschoben
 
 ```text
 src/
-├── components/
-│   ├── gates/       # 3D-Komponenten für Gate-Typen und Handles
-│   ├── layout/      # TopBar und Werkzeugleiste
-│   ├── scene/       # R3F-Canvas, Kamera, Grid, Flugpfad und FPV-Flug
-│   ├── ui/          # Dialoge, Panels und shadcn/ui-Primitives
-│   └── viewer/      # Read-only Share-Viewer
-├── hooks/           # Keyboard- und Auswahl-Logik
-├── schemas/         # Zod-Validierung für Track-Daten
-├── store/           # Zustand-Slices für Config und Tracks
-├── types/           # TypeScript-Domänenmodelle
-└── utils/           # Generator, Flugpfad, Storage, Share-Links und QR-Codes
+├── core/        # Domänenlogik ohne React: Typen, Gate-Definitionen, Generator,
+│                # Flugpfad, Zod-Schemas, Share-Link-Format, Theme-Farben
+├── scene/       # Gemeinsame 3D-Szene (R3F): Canvas, Kamera, Gates, Flugpfad
+├── editor/      # Editor: App, Zustand-Store, Speicher, Panels, Bearbeitungs-Handles
+├── viewer/      # Read-only Share-Viewer
+├── components/  # shadcn/ui-Primitives und ErrorBoundary
+└── i18n.ts      # Übersetzungen DE/EN
 ```
+
+Die Abhängigkeiten zeigen nur in eine Richtung (`core ← scene ← editor/viewer`); ESLint prüft das.
 
 ## Daten und Speicherung
 
@@ -150,7 +149,8 @@ Die Kernlogik ist mit Vitest abgedeckt, unter anderem für:
 - Flugpfad-Berechnung
 - Store-Slices
 - LocalStorage-Persistenz
-- Share-Links und Import/Export-Schema
+- Share-Links (kompaktes Format) und Import/Export-Schema
+- Gate-Definitionen und Bearbeitungs-Handles
 
 ```bash
 npm run test

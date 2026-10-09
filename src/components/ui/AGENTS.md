@@ -1,45 +1,24 @@
-# UI Components — Panels, Dialogs & shadcn Primitives
+# UI Primitives — shadcn/Radix
 
-**Domain:** 36 UI files: editor panels/dialogs, shadcn/Radix primitives, variant helpers
+**Domain:** Store-agnostic UI building blocks shared by editor and viewer. App-specific dialogs/panels live in `src/editor/panels/`.
 
 ## STRUCTURE
 ```
-ui/
-├── GateConfigPanel.tsx       # Gate quantities + field size settings
-├── ThemeConfigPanel.tsx      # Theme preset picker (minimal/realistic/night)
-├── ApplyConfigFooter.tsx     # Apply/discard footer for config changes
-├── SaveTrackDialog.tsx       # Name + save track to localStorage
-├── TrackGallery.tsx          # Saved tracks list with load/delete/duplicate
-├── ShareTrackDialog.tsx      # Generate/copy compressed viewer URL
-├── UnsavedChangesDialog.tsx  # Destructive-action save/discard/cancel flow
-├── KeyboardShortcutsDialog.tsx
-├── directional-pad.tsx       # N/S/E/W movement pad
-├── icon-button.tsx           # Tooltip + Button composition
-├── *-variants.ts             # cva variant definitions
-└── button/dialog/input/...   # shadcn primitives
+components/
+├── ErrorBoundary.tsx      # used by both entry points
+└── ui/
+    ├── button, dialog, input, label, popover, scroll-area, select, separator,
+    │   sheet, slider, tabs, toggle, toggle-group, tooltip, badge, card, collapsible (.tsx)
+    ├── directional-pad.tsx  # N/S/E/W pad
+    ├── icon-button.tsx      # Tooltip + Button
+    └── *-variants.ts        # cva class maps
 ```
 
 ## CONVENTIONS
-- App-specific panels may import `useAppStore` directly; primitives must stay store-agnostic.
-- shadcn primitives import `cn` from `@/lib/utils` and keep Radix composition patterns.
-- Variant files (`button-variants.ts`, `badge-variants.ts`, `tabs-variants.ts`, `toggle-variants.ts`) own `cva` class maps.
-- Theme-aware visual language uses dark cockpit surfaces, sky-blue/slate panels, and warm yellow primary accents.
-- All user-facing copy goes through `useTranslation()`; add DE + EN keys together in `src/i18n.ts`.
-- Destructive editor actions use `UnsavedChangesDialog`, not ad-hoc confirm dialogs.
-
-## WHERE TO LOOK
-| Task | File |
-|------|------|
-| Gate quantities / field size | `GateConfigPanel.tsx`, `ApplyConfigFooter.tsx` |
-| Theme preset picker | `ThemeConfigPanel.tsx`, `src/types/theme.ts` |
-| Save current track | `SaveTrackDialog.tsx` |
-| Load/delete/duplicate saved tracks | `TrackGallery.tsx` |
-| Share current track | `ShareTrackDialog.tsx`, `src/utils/shareTrack.ts` |
-| Unsaved destructive-action flow | `UnsavedChangesDialog.tsx`, `src/store/trackSlice.ts` |
-| Keyboard shortcut reference | `KeyboardShortcutsDialog.tsx`, `src/hooks/useKeyboardShortcuts.ts` |
-| Primitive styling | primitive file + matching `*-variants.ts` if present |
+- `components.json` aliases point here (`@/components/ui`, `@/lib/utils`); add primitives with `npx shadcn@latest add <name>`.
+- Primitives import `cn` from `@/lib/utils`, keep Radix composition, and never read app stores.
+- Variant files own `cva` maps (`button-variants.ts`, `badge-variants.ts`, `tabs-variants.ts`, `toggle-variants.ts`).
+- Visual language: dark cockpit surfaces, sky-blue/slate panels, warm yellow primary accents.
 
 ## TESTING
-- Co-located RTL tests exist for `GateConfigPanel`, `ThemeConfigPanel`, `TrackGallery`, and `ShareTrackDialog`.
-- Mock browser APIs locally in the relevant suite (`localStorage`, clipboard, URL, random UUID).
-- Do not snapshot broad shadcn output; test app behavior and accessible labels instead.
+- No direct suites; behavior is tested through editor/viewer components. Do not snapshot shadcn output.
