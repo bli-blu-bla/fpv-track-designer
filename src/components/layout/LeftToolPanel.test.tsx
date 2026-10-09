@@ -55,7 +55,7 @@ describe('LeftToolPanel', () => {
     vi.unstubAllGlobals()
   })
 
-  it('calls generateTrack and setTrack from Mischen', () => {
+  it('calls generateTrack and setTrack from Mischen', async () => {
     const trackByShuffle = createMockTrack('shuffle')
 
     const generateTrackMock = vi
@@ -67,7 +67,7 @@ describe('LeftToolPanel', () => {
     const shuffleButton = screen.getByRole('button', { name: 'Shuffle' })
 
     fireEvent.click(shuffleButton)
-    expect(generateTrackMock).toHaveBeenCalledTimes(1)
+    await waitFor(() => expect(generateTrackMock).toHaveBeenCalledTimes(1))
     expect(generateTrackMock).toHaveBeenCalledWith(useAppStore.getState().config)
     expect(useAppStore.getState().currentTrack?.id).toBe('shuffle')
   })

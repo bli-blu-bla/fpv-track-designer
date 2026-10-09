@@ -57,19 +57,17 @@ export function TrackGallery({ open, onOpenChange }: TrackGalleryProps) {
   }, [refreshTracks])
 
   const handleLoad = (id: string) => {
-    requestDestructiveAction(
-      () => {
-        const result = loadTrack(id)
-        if (result) {
-          setConfig(result.config)
-          replaceTrack(result.track)
-          onOpenChange(false)
-        }
-        refreshTracks()
-      },
-      t('discardCurrentTrackTitle'),
-      t('dirtyLoadDescription'),
-    )
+    void requestDestructiveAction('load').then((proceed) => {
+      if (!proceed) return
+
+      const result = loadTrack(id)
+      if (result) {
+        setConfig(result.config)
+        replaceTrack(result.track)
+        onOpenChange(false)
+      }
+      refreshTracks()
+    })
   }
 
   const handleDeleteClick = (track: SavedTrackInfo) => {
@@ -129,15 +127,13 @@ export function TrackGallery({ open, onOpenChange }: TrackGalleryProps) {
     setDuplicateName('')
     refreshTracks()
 
-    requestDestructiveAction(
-      () => {
-        setConfig(saved.config)
-        replaceTrack(copiedTrack)
-        onOpenChange(false)
-      },
-      t('discardCurrentTrackTitle'),
-      t('dirtyDuplicateDescription'),
-    )
+    void requestDestructiveAction('duplicate').then((proceed) => {
+      if (!proceed) return
+
+      setConfig(saved.config)
+      replaceTrack(copiedTrack)
+      onOpenChange(false)
+    })
   }
 
   const refresh = refreshTracks

@@ -85,28 +85,26 @@ export const TopBar: FC<TopBarProps> = ({ onShortcutsClick, fpvModeActive, fpvDi
     // Wrap the entire import (read + parse + apply) so the confirmation
     // dialog is shown BEFORE the file is read when the track is dirty.
     // The user's pick is discarded if they cancel.
-    requestDestructiveAction(
-      () => {
-        const reader = new FileReader()
-        reader.onload = (event) => {
-          try {
-            const json = event.target?.result as string
-            const result = deserializeTrack(json)
-            if ('error' in result) {
-              console.error('Import failed:', result.error)
-            } else {
-              setConfig(result.config)
-              replaceTrack(result.track)
-            }
-          } catch {
-            console.error('Failed to parse JSON file')
+    void requestDestructiveAction('import').then((proceed) => {
+      if (!proceed) return
+
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        try {
+          const json = event.target?.result as string
+          const result = deserializeTrack(json)
+          if ('error' in result) {
+            console.error('Import failed:', result.error)
+          } else {
+            setConfig(result.config)
+            replaceTrack(result.track)
           }
+        } catch {
+          console.error('Failed to parse JSON file')
         }
-        reader.readAsText(file)
-      },
-      t('discardCurrentTrackTitle'),
-      t('dirtyImportDescription'),
-    )
+      }
+      reader.readAsText(file)
+    })
   }
 
   return (

@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAppStore } from '@/store'
@@ -98,7 +98,7 @@ describe('TrackGallery', () => {
     expect(await screen.findByText('Track 2')).not.toBeNull()
   })
 
-  it('loads the selected track and its saved config', () => {
+  it('loads the selected track and its saved config', async () => {
     const onOpenChange = vi.fn()
     const savedConfig = createTestConfig({
       fieldSize: { width: 42, height: 24 },
@@ -118,7 +118,7 @@ describe('TrackGallery', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /laden/i }))
 
-    expect(useAppStore.getState().currentTrack?.id).toBe('loaded-track')
+    await waitFor(() => expect(useAppStore.getState().currentTrack?.id).toBe('loaded-track'))
     expect(useAppStore.getState().config.fieldSize).toEqual({ width: 42, height: 24 })
     expect(useAppStore.getState().config.showFlightPath).toBe(false)
     expect(onOpenChange).toHaveBeenCalledWith(false)
@@ -162,7 +162,7 @@ describe('TrackGallery', () => {
     expect(listTracks()).toHaveLength(0)
   })
 
-  it('duplicates a saved track with a new name and loads the copy', () => {
+  it('duplicates a saved track with a new name and loads the copy', async () => {
     const onOpenChange = vi.fn()
     const savedConfig = createTestConfig({
       fieldSize: { width: 36, height: 18 },
@@ -199,7 +199,7 @@ describe('TrackGallery', () => {
     )
     expect(screen.getByText('Original Track')).not.toBeNull()
     expect(screen.getByText('Version 2')).not.toBeNull()
-    expect(useAppStore.getState().currentTrack?.id).toBe('duplicated-track-id')
+    await waitFor(() => expect(useAppStore.getState().currentTrack?.id).toBe('duplicated-track-id'))
     expect(useAppStore.getState().currentTrack?.name).toBe('Version 2')
     expect(useAppStore.getState().config.fieldSize).toEqual({ width: 36, height: 18 })
     expect(useAppStore.getState().config.showOpeningLabels).toBe(false)

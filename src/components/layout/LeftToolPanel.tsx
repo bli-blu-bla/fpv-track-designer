@@ -42,12 +42,10 @@ export const LeftToolPanel: FC<LeftToolPanelProps> = ({
   const [shareError, setShareError] = useState<string | null>(null)
 
   const handleShuffle = useCallback(() => {
-    requestDestructiveAction(
-      () => setTrack(generateTrack(config), extractGenerationConfig(config)),
-      t('discardCurrentTrackTitle'),
-      t('dirtyShuffleDescription'),
-    )
-  }, [config, requestDestructiveAction, setTrack, t])
+    void requestDestructiveAction('shuffle').then((proceed) => {
+      if (proceed) setTrack(generateTrack(config), extractGenerationConfig(config))
+    })
+  }, [config, requestDestructiveAction, setTrack])
 
   const handleSaveClick = useCallback(() => {
     if (onSaveClick) {

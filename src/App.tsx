@@ -92,11 +92,9 @@ function App() {
   useKeyboardShortcuts({
     onSave: () => openSaveDialog(),
     onShuffle: () => {
-      requestDestructiveAction(
-        () => setTrack(generateTrack(config), extractGenerationConfig(config)),
-        t('discardCurrentTrackTitle'),
-        t('dirtyShuffleDescription'),
-      )
+      void requestDestructiveAction('shuffle').then((proceed) => {
+        if (proceed) setTrack(generateTrack(config), extractGenerationConfig(config))
+      })
     },
     onOpenGallery: () => {
       setSettingsOpen(false)

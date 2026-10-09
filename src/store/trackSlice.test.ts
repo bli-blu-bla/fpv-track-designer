@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { create } from 'zustand'
-import { createTrackSlice, type TrackSlice } from './trackSlice'
+import { createEditorStore } from './index'
+import { defaultConfig } from './configSlice'
 import type { Config, Track, Gate } from '../types'
 import { createDefaultGateOpenings } from '../utils/gateOpenings'
 import type { GenerationConfig } from '../utils/generationConfig'
@@ -25,16 +25,15 @@ const createTestGate = (id: string, overrides: Partial<Gate> = {}): Gate => ({
 })
 
 const createTestStore = () => {
-  return create<TrackSlice>()((set, get, store) => ({
-    ...createTrackSlice(set, get, store),
-  }))
+  const store = createEditorStore()
+  store.getState().setConfig({ ...defaultConfig, fieldSize: { width: 100, height: 100 } })
+  return store
 }
 
 const createSnapTestStore = (config: Pick<Config, 'snapGatesToGrid'> & Partial<Pick<Config, 'snapGridSize'>>) => {
-  return create<TrackSlice & { config: Pick<Config, 'fieldSize' | 'snapGatesToGrid' | 'snapGridSize'> }>()((set, get, store) => ({
-    config: { fieldSize: { width: 100, height: 100 }, snapGridSize: 0.3, ...config },
-    ...createTrackSlice(set, get, store),
-  }))
+  const store = createTestStore()
+  store.getState().setConfig({ ...store.getState().config, snapGridSize: 0.3, ...config })
+  return store
 }
 
 describe('TrackSlice - Undo/Redo', () => {
@@ -991,142 +990,96 @@ describe('TrackSlice - generationConfig and isTrackModified', () => {
     expect(store.getState().isTrackModified).toBe(false)
   })
 
-  it('requestDestructiveAction runs immediately when the track is clean', () => {
-    const track = createTestTrack([createTestGate('gate-1')])
-    let called = false
+  it('requestDestructiveAction resolves immediately when the track is clean', async () => {
+    store.getState().setTrack(createTestTrack([createTestGate('gate-1')]))
 
-    store.getState().setTrack(track)
-    store.getState().requestDestructiveAction(
-      () => {
-        called = true
-      },
-      'Titel',
-      'Beschreibung',
-    )
-
-    expect(called).toBe(true)
+    await expect(store.getState().requestDestructiveAction('shuffle')).resolves.toBe(true)
     expect(store.getState().pendingDestructiveAction).toBeNull()
   })
 
-  it('requestDestructiveAction stages the action when the track is modified', () => {
-    const track = createTestTrack([createTestGate('gate-1')])
-    let called = false
-
-    store.getState().setTrack(track)
+  it('requestDestructiveAction stays pending with its reason when the track is modified', async () => {
+    store.getState().setTrack(createTestTrack([createTestGate('gate-1')]))
     store.getState().moveGate('gate-1', 'N', 1)
-    store.getState().requestDestructiveAction(
-      () => {
-        called = true
-      },
-      'Titel',
-      'Beschreibung',
-    )
 
-    expect(called).toBe(false)
-    expect(store.getState().pendingDestructiveAction?.title).toBe('Titel')
-    expect(store.getState().pendingDestructiveAction?.description).toBe('Beschreibung')
+    let settled = false
+    void store.getState().requestDestructiveAction('import').then(() => {
+      settled = true
+    })
+    await Promise.resolve()
+
+    expect(settled).toBe(false)
+    expect(store.getState().pendingDestructiveAction).toEqual({ reason: 'import' })
   })
 
-  it('cancelDestructiveAction discards a staged destructive action', () => {
-    const track = createTestTrack([createTestGate('gate-1')])
-    let called = false
-
-    store.getState().setTrack(track)
+  it('cancelDestructiveAction resolves false and clears the request', async () => {
+    store.getState().setTrack(createTestTrack([createTestGate('gate-1')]))
     store.getState().moveGate('gate-1', 'N', 1)
-    store.getState().requestDestructiveAction(
-      () => {
-        called = true
-      },
-      'Titel',
-      'Beschreibung',
-    )
+
+    const request = store.getState().requestDestructiveAction('load')
     store.getState().cancelDestructiveAction()
 
-    expect(called).toBe(false)
+    await expect(request).resolves.toBe(false)
     expect(store.getState().pendingDestructiveAction).toBeNull()
   })
 
-  it('confirmDestructiveAction runs and clears a staged destructive action', () => {
-    const track = createTestTrack([createTestGate('gate-1')])
-    let called = false
-
-    store.getState().setTrack(track)
+  it('confirmDestructiveAction resolves true and clears the request', async () => {
+    store.getState().setTrack(createTestTrack([createTestGate('gate-1')]))
     store.getState().moveGate('gate-1', 'N', 1)
-    store.getState().requestDestructiveAction(
-      () => {
-        called = true
-      },
-      'Titel',
-      'Beschreibung',
-    )
+
+    const request = store.getState().requestDestructiveAction('shuffle')
     store.getState().confirmDestructiveAction()
 
-    expect(called).toBe(true)
+    await expect(request).resolves.toBe(true)
     expect(store.getState().pendingDestructiveAction).toBeNull()
   })
 
-  it('saveBeforeDestructiveAction opens save dialog while keeping the staged action', () => {
-    const track = createTestTrack([createTestGate('gate-1')])
-    let called = false
-
-    store.getState().setTrack(track)
+  it('saveBeforeDestructiveAction opens the save dialog while the request stays pending', () => {
+    store.getState().setTrack(createTestTrack([createTestGate('gate-1')]))
     store.getState().moveGate('gate-1', 'N', 1)
-    store.getState().requestDestructiveAction(
-      () => {
-        called = true
-      },
-      'Titel',
-      'Beschreibung',
-    )
+
+    void store.getState().requestDestructiveAction('duplicate')
     store.getState().saveBeforeDestructiveAction()
 
-    expect(called).toBe(false)
     expect(store.getState().isSaveDialogOpen).toBe(true)
-    expect(store.getState().pendingDestructiveAction).not.toBeNull()
+    expect(store.getState().pendingDestructiveAction).toEqual({ reason: 'duplicate' })
   })
 
-  it('markTrackSaved clears dirty state and continues a staged destructive action', () => {
-    const track = createTestTrack([createTestGate('gate-1')])
-    let called = false
-
-    store.getState().setTrack(track)
+  it('markTrackSaved clears dirty state and lets a pending request proceed', async () => {
+    store.getState().setTrack(createTestTrack([createTestGate('gate-1')]))
     store.getState().moveGate('gate-1', 'N', 1)
     expect(store.getState().isTrackModified).toBe(true)
 
-    store.getState().requestDestructiveAction(
-      () => {
-        called = true
-      },
-      'Titel',
-      'Beschreibung',
-    )
+    const request = store.getState().requestDestructiveAction('apply-config')
     store.getState().saveBeforeDestructiveAction()
     store.getState().markTrackSaved()
 
-    expect(called).toBe(true)
+    await expect(request).resolves.toBe(true)
     expect(store.getState().isTrackModified).toBe(false)
     expect(store.getState().isSaveDialogOpen).toBe(false)
     expect(store.getState().pendingDestructiveAction).toBeNull()
   })
 
-  it('dismissSaveDialog cancels both the save dialog and the staged destructive action', () => {
-    const track = createTestTrack([createTestGate('gate-1')])
-    let called = false
-
-    store.getState().setTrack(track)
+  it('dismissSaveDialog cancels both the save dialog and the pending request', async () => {
+    store.getState().setTrack(createTestTrack([createTestGate('gate-1')]))
     store.getState().moveGate('gate-1', 'N', 1)
-    store.getState().requestDestructiveAction(
-      () => {
-        called = true
-      },
-      'Titel',
-      'Beschreibung',
-    )
+
+    const request = store.getState().requestDestructiveAction('shuffle')
     store.getState().saveBeforeDestructiveAction()
     store.getState().dismissSaveDialog()
 
-    expect(called).toBe(false)
+    await expect(request).resolves.toBe(false)
     expect(store.getState().isSaveDialogOpen).toBe(false)
     expect(store.getState().pendingDestructiveAction).toBeNull()
+  })
+
+  it('a newer request cancels an older pending one', async () => {
+    store.getState().setTrack(createTestTrack([createTestGate('gate-1')]))
+    store.getState().moveGate('gate-1', 'N', 1)
+
+    const first = store.getState().requestDestructiveAction('shuffle')
+    void store.getState().requestDestructiveAction('load')
+
+    await expect(first).resolves.toBe(false)
+    expect(store.getState().pendingDestructiveAction).toEqual({ reason: 'load' })
   })
 })

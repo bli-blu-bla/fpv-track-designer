@@ -387,7 +387,7 @@ const translations = {
   },
 } as const
 
-type TranslationKey = keyof typeof translations.de
+export type TranslationKey = keyof typeof translations.de
 
 const gateTypeLabels: Record<Language, Record<GateType, string>> = {
   de: {

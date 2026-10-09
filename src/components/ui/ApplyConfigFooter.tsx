@@ -23,11 +23,9 @@ export function ApplyConfigFooter() {
   if (!drift) return null
 
   const handleClick = () => {
-    requestDestructiveAction(
-      () => setTrack(generateTrack(config), extractGenerationConfig(config)),
-      t('discardCurrentTrackTitle'),
-      t('applyConfigDirtyDescription'),
-    )
+    void requestDestructiveAction('apply-config').then((proceed) => {
+      if (proceed) setTrack(generateTrack(config), extractGenerationConfig(config))
+    })
   }
 
   return (

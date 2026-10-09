@@ -9,7 +9,16 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { useTranslation } from '@/i18n'
+import { useTranslation, type TranslationKey } from '@/i18n'
+import type { DestructiveActionReason } from '@/store/unsavedChangesSlice'
+
+const REASON_DESCRIPTION_KEYS: Record<DestructiveActionReason, TranslationKey> = {
+  shuffle: 'dirtyShuffleDescription',
+  'apply-config': 'applyConfigDirtyDescription',
+  import: 'dirtyImportDescription',
+  load: 'dirtyLoadDescription',
+  duplicate: 'dirtyDuplicateDescription',
+}
 
 /**
  * Globally-mounted confirmation dialog shown whenever a destructive action
@@ -17,13 +26,13 @@ import { useTranslation } from '@/i18n'
  * triggered while there are unsaved changes (`isTrackModified === true`).
  *
  * Three resolution paths:
- *   - Abbrechen          → cancelDestructiveAction()         (discard staged action)
- *   - Zuerst speichern   → saveBeforeDestructiveAction()     (open SaveTrackDialog, keep staged)
- *   - Verwerfen          → confirmDestructiveAction()        (run staged action, lose changes)
+ *   - Abbrechen          → cancelDestructiveAction()         (keep current track)
+ *   - Zuerst speichern   → saveBeforeDestructiveAction()     (open SaveTrackDialog, request stays pending)
+ *   - Verwerfen          → confirmDestructiveAction()        (proceed, lose changes)
  *
  * The dialog hides itself while SaveTrackDialog is open so the two dialogs
- * never overlap. Once the user saves successfully, `markTrackSaved` runs the
- * staged action automatically.
+ * never overlap. Once the user saves successfully, `markTrackSaved` lets the
+ * pending request proceed.
  */
 export const UnsavedChangesDialog: FC = () => {
   const { t } = useTranslation()
@@ -44,10 +53,9 @@ export const UnsavedChangesDialog: FC = () => {
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{pending?.title ?? t('unsavedChanges')}</DialogTitle>
+          <DialogTitle>{pending ? t('discardCurrentTrackTitle') : t('unsavedChanges')}</DialogTitle>
           <DialogDescription>
-            {pending?.description
-              ?? t('unsavedChangesDescription')}
+            {pending ? t(REASON_DESCRIPTION_KEYS[pending.reason]) : t('unsavedChangesDescription')}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="mt-4 gap-2 sm:gap-2">
