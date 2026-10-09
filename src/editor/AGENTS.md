@@ -31,7 +31,8 @@ editor/
 | Task | Location |
 |------|----------|
 | Store state/actions, dirty flow | `store/`, `store/AGENTS.md` |
-| Shortcuts | `hooks/useKeyboardShortcuts.ts` (S, Cmd/Ctrl+S, G, Cmd/Ctrl+Z/Y, Escape, Backspace, Enter) |
+| Shortcuts | `hooks/useKeyboardShortcuts.ts` (S, Cmd/Ctrl+S, G, Cmd/Ctrl+Z/Y, Escape, Backspace, Enter, arrows) |
+| Arrow-key nudging | `keyboardNudge.ts` (key → `GateNudge`, steps follow snap) + store `nudgeSelectedGates` (key repeat = one undo step) |
 | Import/export JSON | `layout/TopBar.tsx` export menu → `serializeTrack(…, { pretty: true })` / `deserializeTrack()` |
 | Shuffle | `App.tsx` `shuffleTrack` (TopBar dice + `S`) |
 | Share | `hooks/useShareTrack.ts`, `panels/ShareTrackDialog.tsx`, `src/core/share/` |

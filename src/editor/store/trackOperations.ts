@@ -6,6 +6,14 @@ import { normalizeGateSequence } from '@/core/gates/gateSequence'
 
 export type MoveDirection = 'N' | 'S' | 'E' | 'W'
 
+/** Relative change applied to every selected gate (meters / degrees). */
+export interface GateNudge {
+  dx?: number
+  dy?: number
+  dz?: number
+  rotation?: number
+}
+
 type SnapConfig = Pick<Config, 'snapGatesToGrid' | 'snapGridSize'>
 
 // Gates share their base footprint with the gate opening geometry.

@@ -84,7 +84,7 @@ export function KeyboardShortcutsDialog({
         { description: t('deselectClose'), keys: ['Escape'] },
       ],
     },
-    { category: t('gateEditing'), shortcuts: [{ description: t('deleteSelectedGate'), keys: ['Backspace'] }, { description: t('confirmDelete'), keys: ['Enter'] }, { description: t('dragRotateGate'), keys: [t('dragRotateGateKey')] }] },
+    { category: t('gateEditing'), shortcuts: [{ description: t('deleteSelectedGate'), keys: ['Backspace'] }, { description: t('confirmDelete'), keys: ['Enter'] }, { description: t('dragRotateGate'), keys: [t('dragRotateGateKey')] }, { description: t('nudgeGate'), keys: ['← ↑ → ↓'] }, { description: t('nudgeRotateGate'), keys: ['Shift + ← →'] }, { description: t('nudgeGateHeight'), keys: ['Shift + ↑ ↓'] }] },
     { category: t('history'), shortcuts: [{ description: t('undo'), keys: [ctrl, 'Z'] }, { description: t('redo'), keys: [ctrl, 'Y', '/', ctrl, 'Shift', 'Z'] }] },
   ]
   return (

@@ -140,6 +140,8 @@ So bearbeitest du einzelne Gates direkt in der 3D-Szene:
 
 Alternativ bearbeitest du ein ausgewähltes Gate präzise im **Inspektor** rechts: Position **X/Z** und Höhe in Metern, Rotation per Regler oder mit den Schnellwerten 0°/90°/180°/270°, Durchflug-Reihenfolge mit den Pfeilen, außerdem **Duplizieren** und **Löschen**.
 
+**Mit der Tastatur:** Ist mindestens ein Gate ausgewählt, verschieben die **Pfeiltasten** es auf dem Feld (↑ = Norden, → = Osten). **`Shift + ←/→`** dreht es, **`Shift + ↑/↓`** hebt oder senkt es. Die Schrittweite ist 0,1 m bzw. 5°; bei aktivem Grid-Snap die gewählte Snap-Genauigkeit bzw. 15°. Bei mehreren ausgewählten Gates bewegen sich alle gemeinsam. Hältst du eine Taste gedrückt, macht ein einzelnes **`Cmd/Ctrl + Z`** die ganze Bewegung rückgängig.
+
 ### 6.1 Einflug-/Ausflugseite wechseln
 
 Jedes Gate zeigt **grüne Einflug-** und **rote Ausflug-Markierungen** (diese Indikatoren sind immer sichtbar). Klicke die Markierung an und drehe die Richtung mit dem **⇄-Symbol** um. Die grüne Seite zeigt danach die neue Einflugseite.
@@ -287,6 +289,9 @@ Während eines **FPV-Flugs** sind die Kamera-Bedienelemente deaktiviert, bis du 
 | Wiederholen | `Cmd/Ctrl + Y` oder `Cmd/Ctrl + Shift + Z` |
 | Ausgewähltes Gate löschen (Dialog) | `Backspace` |
 | Löschen bestätigen | `Enter` |
+| Ausgewählte Gates verschieben | Pfeiltasten |
+| Ausgewählte Gates drehen | `Shift + ←/→` |
+| Ausgewählte Gates anheben/absenken | `Shift + ↑/↓` |
 | Gate abwählen / Dialoge schließen / **FPV stoppen** | `Escape` |
 
 ---

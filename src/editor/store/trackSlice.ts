@@ -13,6 +13,7 @@ import {
   prepareGatePosition,
   touchTrack,
   translatePosition,
+  type GateNudge,
   type MoveDirection,
 } from './trackOperations'
 import type { AppState } from './types'
@@ -38,6 +39,11 @@ export interface TrackSlice {
   moveGate: (gateId: string, direction: MoveDirection, distance?: number) => void
   moveSelectedGates: (direction: MoveDirection, distance?: number) => void
   rotateGate: (gateId: string, clockwise: boolean) => void
+  /**
+   * Keyboard nudge for all selected gates. `continuing` (key repeat) folds the
+   * step into the previous undo entry, so holding a key is one undo step.
+   */
+  nudgeSelectedGates: (nudge: GateNudge, options?: { continuing?: boolean }) => void
   insertGateAtIndex: (gate: Gate, gateIndex: number, sequenceIndex: number) => void
   deleteSelectedGates: () => void
   toggleGateDirection: (gateId: string, openingId: string) => void
@@ -193,6 +199,32 @@ export const createTrackSlice: StateCreator<AppState, [], [], TrackSlice> = (set
     if (state.selectedGateIds.length === 0) return state
 
     return moveGates(state, new Set(state.selectedGateIds), direction, distance)
+  }),
+  nudgeSelectedGates: (nudge, { continuing = false } = {}) => set((state) => {
+    if (!state.currentTrack || state.selectedGateIds.length === 0) return state
+
+    const selectedIds = new Set(state.selectedGateIds)
+    const fieldSize = state.currentTrack.fieldSize ?? state.config.fieldSize
+    const track = {
+      ...state.currentTrack,
+      gates: state.currentTrack.gates.map((gate) => selectedIds.has(gate.id)
+        ? {
+          ...gate,
+          position: prepareGatePosition(
+            translatePosition(gate.position, { x: nudge.dx, y: nudge.dy, z: nudge.dz }),
+            state.config,
+            fieldSize,
+          ),
+          rotation: normalizeRotation(gate.rotation + (nudge.rotation ?? 0)),
+        }
+        : gate),
+    }
+
+    if (continuing && state.past.length > 0) {
+      return { currentTrack: touchTrack(track), isTrackModified: true }
+    }
+
+    return applyEdit(state, () => ({ track }))
   }),
   rotateGate: (gateId, clockwise) => set((state) => applyEdit(state, (track) => ({
     track: {

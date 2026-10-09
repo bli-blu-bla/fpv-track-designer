@@ -116,6 +116,9 @@ Alternativ kann die Ansicht auch mit `Space + linke Maustaste ziehen` verschoben
 | Auswahl/Dialog schließen, FPV-Flug stoppen | `Escape` |
 | Ausgewähltes Gate löschen | `Backspace` |
 | Löschen bestätigen (im Dialog) | `Enter` |
+| Ausgewählte Gates verschieben | Pfeiltasten (0,1 m bzw. Snap-Raster) |
+| Ausgewählte Gates drehen | `Shift + ←/→` (5° bzw. 15° mit Snap) |
+| Ausgewählte Gates anheben/absenken | `Shift + ↑/↓` |
 | Rückgängig | `Cmd/Ctrl + Z` |
 | Wiederholen | `Cmd/Ctrl + Y` oder `Cmd/Ctrl + Shift + Z` |
 

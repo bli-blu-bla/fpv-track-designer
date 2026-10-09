@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useAppStore } from '@/editor/store'
+import { getArrowKeyNudge } from '@/editor/keyboardNudge'
 
 interface KeyboardShortcutsOptions {
   onSave?: () => void
@@ -19,6 +20,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions = {}) {
   const openDeleteDialog = useAppStore((s) => s.openDeleteDialog)
   const closeDeleteDialog = useAppStore((s) => s.closeDeleteDialog)
   const deleteSelectedGates = useAppStore((s) => s.deleteSelectedGates)
+  const nudgeSelectedGates = useAppStore((s) => s.nudgeSelectedGates)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -41,6 +43,15 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions = {}) {
         e.preventDefault()
         onSave?.()
         return
+      }
+
+      if (selectedGateIds.length > 0 && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        const nudge = getArrowKeyNudge(e.key, e.shiftKey, useAppStore.getState().config)
+        if (nudge) {
+          e.preventDefault()
+          nudgeSelectedGates(nudge, { continuing: e.repeat })
+          return
+        }
       }
 
       if (e.key === 's' || e.key === 'S') {
@@ -95,5 +106,6 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions = {}) {
     openDeleteDialog,
     closeDeleteDialog,
     deleteSelectedGates,
+    nudgeSelectedGates,
   ])
 }
