@@ -11,9 +11,11 @@ scene/
 ├── SceneTheme.tsx         # SceneThemeContext + useSceneTheme(); provided inside the Canvas
 ├── pointer.ts             # isCameraTouchGesture()
 ├── Grid.tsx               # Ground, field boundary, grid lines; optional onGroundClick
+├── parquetTexture.ts      # procedural, seamless oak parquet CanvasTexture (gym floor); cloned per field size
+├── CourtMarkings.tsx      # gym court lines scaled to the field (handball court, centre circle, spot)
 ├── FlightPath.tsx         # One native THREE.Line per sampled segment + arrows
 ├── FpvFlyThrough.tsx      # Automated first-person flight along sampled path
-├── NightBloom.tsx         # Bloom postprocessing, lazy-loaded for the night theme
+├── NightBloom.tsx         # Bloom postprocessing, lazy-loaded for the night sky
 ├── SkyDome.tsx            # Shader sky dome
 ├── CameraPan.tsx          # Space+left-drag / right-drag pan
 ├── CameraVerticalPan.tsx  # Shift+left-drag vertical pan
@@ -29,7 +31,7 @@ scene/
 
 ## CONVENTIONS
 - `Scene` renders exactly what it receives and reads no app store. Interactivity is injected: the editor passes `gateComponent={EditableGate}` and `onGroundClick`; the viewer passes neither.
-- Colors come from `useSceneTheme()`, never from a store. The provider sits inside `<Canvas>` and is derived from `config.theme`.
+- Colors come from `useSceneTheme()`, never from a store. The provider sits inside `<Canvas>` and holds `getSceneLook(config)`; one composition renders background (dome/stars/flat), optional sun glow, environment, lights, ground and bloom from that look.
 - Gate meshes use `meshStandardMaterial` with solid colors from `getGateColors()`; selection is an emissive highlight.
 - Camera controllers are imperative (`useThree`, refs, DOM listeners, `useFrame`) and return `null`.
 - Per-type, non-visual data (openings, heights, poles) belongs in `src/core/gates/gateDefinitions.ts`, not here.

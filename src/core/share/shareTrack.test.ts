@@ -84,7 +84,8 @@ describe('shareTrack helpers', () => {
     expect('error' in decoded).toBe(false)
     if ('error' in decoded) return
     expect(decoded.track.id).toBe('share-track')
-    expect(decoded.config.theme).toBe(defaultConfig.theme)
+    expect(decoded.config.sky).toBe('day')
+    expect(decoded.config.quality).toBe('simple')
   })
 
   it('compresses larger share payloads below the legacy base64 size', () => {

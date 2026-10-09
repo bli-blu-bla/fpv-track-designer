@@ -8,7 +8,7 @@ editor/
 ├── App.tsx                 # Shell layout (header / rail / side panel / canvas / inspector), dialogs, first-load generation
 ├── storage.ts              # localStorage CRUD via core schema (`fpv-track-<id>`), list with gate/pole counts, JPEG previews under `fpv-track-thumb-<id>`
 ├── store/                  # Zustand slices, see store/AGENTS.md
-├── hooks/                  # useKeyboardShortcuts, useShareTrack (link + shortener), useGateUiColor (theme swatches)
+├── hooks/                  # useKeyboardShortcuts, useShareTrack (link + shortener), useGateUiColor (look-aware swatches)
 ├── layout/
 │   ├── TopBar.tsx          # logo, undo/redo, editable track name, save state, shuffle, poles, export menu, language, help, FPV
 │   ├── ToolRail.tsx        # 52px icon rail; sidePanels.ts holds SidePanelId + titles
@@ -16,7 +16,7 @@ editor/
 │   ├── ViewToolbar.tsx     # floating canvas toolbar (grid/snap/path/passes, snap size, reset view) + 3D/top tabs
 │   ├── Inspector.tsx       # 288px right sidebar: track stats or selected-gate properties (hidden below lg)
 │   └── PoleCounter.tsx
-├── panels/                 # GateLibraryPanel, LayersPanel, GateConfigPanel (Feld), ThemeConfigPanel (Darstellung),
+├── panels/                 # GateLibraryPanel, LayersPanel, GateConfigPanel (Feld + Untergrund), ThemeConfigPanel (Szene + Grafikqualität),
 │                           # ApplyConfigFooter, SaveTrackDialog, TrackGallery (Meine Tracks panel), ShareTrackDialog,
 │                           # UnsavedChangesDialog, KeyboardShortcutsDialog
 ├── gates/

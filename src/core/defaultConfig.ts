@@ -21,5 +21,7 @@ export const defaultConfig: Config = {
   showGrid: false,
   showFlightPath: true,
   showOpeningLabels: true,
-  theme: 'minimal' as const,
+  sky: 'day',
+  ground: 'grass',
+  quality: 'simple',
 }

@@ -80,18 +80,28 @@ describe('compact share format', () => {
     ])
   })
 
-  it('carries theme, display flags, name and field size', () => {
-    const config: Config = { ...defaultConfig, theme: 'night', showGrid: true, showFlightPath: false, showOpeningLabels: true }
+  it('carries sky, ground, quality, display flags, name and field size', () => {
+    const config: Config = { ...defaultConfig, sky: 'night', ground: 'asphalt', quality: 'realistic', showGrid: true, showFlightPath: false, showOpeningLabels: true }
     const { track, config: decodedConfig } = decode(baseTrack([createGate('g', 'standard', 0, 0)]), config)
 
     expect(track.name).toBe('Kompakt')
     expect(track.fieldSize).toEqual({ width: 30, height: 15 })
-    expect(decodedConfig).toMatchObject({ theme: 'night', showGrid: true, showFlightPath: false, showOpeningLabels: true })
+    expect(decodedConfig).toMatchObject({ sky: 'night', ground: 'asphalt', quality: 'realistic', showGrid: true, showFlightPath: false, showOpeningLabels: true })
     expect(decodedConfig.gateQuantities.standard).toBe(1)
   })
 
   it('rejects malformed payloads', () => {
     expect('error' in decodeCompactTrack('[2,"x"]')).toBe(true)
     expect('error' in decodeCompactTrack('not json')).toBe(true)
+  })
+
+  it('maps the theme of version-1 links to sky and quality', () => {
+    const [, ...rest] = JSON.parse(encodeCompactTrack(baseTrack([createGate('g', 'standard', 0, 0)]), defaultConfig))
+    rest[3] = 2 // legacy theme index: night
+    const result = decodeCompactTrack(JSON.stringify([1, ...rest]))
+
+    expect('error' in result).toBe(false)
+    if ('error' in result) return
+    expect(result.config).toMatchObject({ sky: 'night', ground: 'grass', quality: 'realistic' })
   })
 })

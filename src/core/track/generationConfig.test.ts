@@ -22,7 +22,9 @@ const baseConfig: Config = {
   showGrid: false,
   showFlightPath: true,
   showOpeningLabels: true,
-  theme: 'minimal',
+  sky: 'day',
+  ground: 'grass',
+  quality: 'simple',
 }
 
 function makeConfig(overrides?: Partial<Config>): Config {

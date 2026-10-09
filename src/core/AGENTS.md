@@ -9,7 +9,7 @@ core/
 │   ├── gate.ts            # GATE_TYPES (canonical order), GateType, Gate, GateOpening, PersistedGateOpening
 │   ├── track.ts           # Track, GateSequenceItem
 │   ├── config.ts          # Config, SNAP_GRID_SIZES
-│   └── theme.ts           # THEME_IDS, ThemeColors, ThemeConfig, THEME_PRESETS, DEFAULT_THEME
+│   └── theme.ts           # SKY/GROUND/QUALITY ids + presets, LEGACY_THEME_LOOKS, ThemeColors, ThemeConfig
 ├── defaultConfig.ts       # First-visit / reset config
 ├── constants/gateDimensions.ts
 ├── gates/
@@ -27,7 +27,7 @@ core/
 ├── share/
 │   ├── shareTrack.ts      # `c.` / `z.` / base64 share payloads, viewer URL, shortener client
 │   └── qrCode.ts          # share QR PNG/SVG
-└── theme/themeColors.ts   # getThemeConfig(), getGateColors()
+└── theme/themeColors.ts   # getSceneLook({ sky, ground, quality }) (cached), getGateColors(), shadeHex()
 ```
 
 ## GATE TYPES
@@ -37,12 +37,12 @@ Dive exit side and h-gate backrest side derive from the gate id (`getGateIdVaria
 
 ## PERSISTENCE FORMAT (`schemas/track.schema.ts`)
 - Zod schema is the only trusted boundary for files, localStorage and share links. Errors are `{ field, message }` with paths like `track.gates[0].rotation`.
-- Version `2.0.0` stores only user state: gates without opening geometry (only `{ id, reverse: true }` for reversed openings), and no `gateSequence` when it equals the default lap. 1.x files with full openings still load; legacy `asymmetric` maps to `double-h`, legacy `gateSize`/`size` fields are dropped.
+- Version `2.1.0` stores `sky`/`ground`/`quality` instead of `theme` (older `theme` values map via `LEGACY_THEME_LOOKS`). Since 2.0 it stores only user state: gates without opening geometry (only `{ id, reverse: true }` for reversed openings), and no `gateSequence` when it equals the default lap. 1.x files with full openings still load; legacy `asymmetric` maps to `double-h`, legacy `gateSize`/`size` fields are dropped.
 - `serializeTrack(track, config)` is minified (storage); file downloads pass `{ pretty: true }`.
 - `parseTrackExport(data)` validates and normalizes any parsed object; `deserializeTrack(json)` wraps it.
 
 ## SHARE LINKS
-- New links: `c.` + lz-string of `encodeCompactTrack()` — positions in cm, whole-degree rotation, gate index instead of ids, sequence omitted when default. ~200 chars for 11 gates.
+- New links: `c.` + lz-string of `encodeCompactTrack()` — positions in cm, whole-degree rotation, gate index instead of ids, sequence omitted when default, look packed into one integer (compact format v2; v1 links carry a theme index). ~200 chars for 11 gates.
 - `z.` (lz-string full JSON) and prefix-less base64url links must keep decoding.
 - Decoded compact payloads are turned into an export object and still pass `trackExportSchema`.
 

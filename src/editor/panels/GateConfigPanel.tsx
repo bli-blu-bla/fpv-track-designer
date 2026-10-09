@@ -1,13 +1,20 @@
 import type { FocusEvent, KeyboardEvent } from 'react'
 import { useAppStore } from '@/editor/store'
-import { GATE_TYPES } from '@/core/types'
+import { GATE_TYPES, GROUND_IDS, GROUND_PRESETS, type GroundId } from '@/core/types'
+import { cn } from '@/lib/utils'
 import { GateIcon } from '@/editor/icons/GateIcon'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { RotateCcw } from 'lucide-react'
-import { useTranslation } from '@/i18n'
+import { useTranslation, type TranslationKey } from '@/i18n'
 
+
+const GROUND_LABELS: Record<GroundId, TranslationKey> = {
+  grass: 'groundGrass',
+  hall: 'groundHall',
+  asphalt: 'groundAsphalt',
+}
 
 export function GateConfigPanel() {
   const { t, gateTypeLabel } = useTranslation()
@@ -15,6 +22,7 @@ export function GateConfigPanel() {
   const setGateQuantity = useAppStore((state) => state.setGateQuantity)
   const setFieldSize = useAppStore((state) => state.setFieldSize)
   const resetToDefault = useAppStore((state) => state.resetToDefault)
+  const setSceneLook = useAppStore((state) => state.setSceneLook)
 
 
   const normalizeFieldSizeValue = (value: string): string | null => {
@@ -86,6 +94,27 @@ export function GateConfigPanel() {
               className="h-[34px] font-mono"
             />
           </div>
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-1.5">
+        <h3 className="text-xs font-medium text-muted-foreground">{t('groundLabel')}</h3>
+        <div className="grid grid-cols-3 gap-1.5">
+          {GROUND_IDS.map((id) => (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={config.ground === id}
+              onClick={() => setSceneLook({ ground: id })}
+              className={cn(
+                'flex h-14 flex-col items-center justify-center gap-1.5 rounded-lg border text-xs transition-colors',
+                config.ground === id ? 'border-foreground' : 'border-border hover:border-ring',
+              )}
+            >
+              <span aria-hidden="true" className="h-3 w-[22px] rounded-[3px]" style={{ background: GROUND_PRESETS[id].groundSurface }} />
+              {t(GROUND_LABELS[id])}
+            </button>
+          ))}
         </div>
       </section>
 

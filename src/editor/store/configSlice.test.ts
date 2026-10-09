@@ -77,7 +77,9 @@ describe('ConfigSlice - default settings', () => {
       showFlightPath: false,
       showOpeningLabels: false,
       showGrid: true,
-      theme: 'minimal',
+      sky: 'day',
+      ground: 'grass',
+      quality: 'simple',
     })
 
     expect(store.getState().config.fieldSize).toEqual({ width: 42, height: 24 })

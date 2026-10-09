@@ -24,21 +24,22 @@ describe('ThemeConfigPanel', () => {
     resetStore()
   })
 
-  it('updates the active theme when a theme option is selected', () => {
+  it('switches the sky and the graphics quality', () => {
     render(<ThemeConfigPanel />)
 
-    fireEvent.click(screen.getByRole('button', { name: /Nacht/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Dämmerung' }))
+    fireEvent.click(screen.getByRole('button', { name: /Realistisch/ }))
 
-    expect(useAppStore.getState().config.theme).toBe('night')
+    expect(useAppStore.getState().config).toMatchObject({ sky: 'dusk', quality: 'realistic' })
   })
 
-it('offers only the supported theme options', () => {
-  render(<ThemeConfigPanel />)
+  it('offers four skies and two quality levels', () => {
+    render(<ThemeConfigPanel />)
 
-  expect(screen.getByRole('button', { name: /Minimal Standard/i })).toBeTruthy()
-  expect(screen.getByRole('button', { name: /Realistisch/i })).toBeTruthy()
-  expect(screen.getByRole('button', { name: /Nacht/i })).toBeTruthy()
-
-  expect(screen.getAllByRole('button')).toHaveLength(3)
-})
+    for (const name of ['Tag', 'Dämmerung', 'Nacht', 'Studio']) {
+      expect(screen.getByRole('button', { name })).toBeTruthy()
+    }
+    expect(screen.getAllByRole('button')).toHaveLength(6)
+    expect(screen.getByRole('button', { name: 'Tag' }).getAttribute('aria-pressed')).toBe('true')
+  })
 })

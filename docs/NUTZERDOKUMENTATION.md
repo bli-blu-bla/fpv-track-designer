@@ -16,7 +16,7 @@ Die App läuft komplett im Browser, ist **desktop-orientiert** (Maus + Tastatur)
 6. [Gates bearbeiten](#6-gates-bearbeiten)
 7. [Die Flugbahn verstehen](#7-die-flugbahn-verstehen)
 8. [FPV-Flug (Durchfliegen)](#8-fpv-flug-durchfliegen)
-9. [Design & Themes](#9-design--themes)
+9. [Szene, Untergrund & Grafikqualität](#9-szene-untergrund--grafikqualität)
 10. [Speichern & Galerie](#10-speichern--galerie)
 11. [Import & Export (JSON)](#11-import--export-json)
 12. [Strecken teilen & Viewer](#12-strecken-teilen--viewer)
@@ -181,17 +181,27 @@ Das Highlight: die Strecke einmal aus der **Ich-Perspektive** durchfliegen.
 
 ---
 
-## 9. Design & Themes
+## 9. Szene, Untergrund & Grafikqualität
 
-Über das Panel **Darstellung** (Paletten-Symbol) wählst du das visuelle Erscheinungsbild der 3D-Ansicht:
+Das Aussehen der 3D-Ansicht setzt sich aus drei Einstellungen zusammen:
 
-| Theme | Beschreibung |
+**Szene** (Panel **Darstellung**, Paletten-Symbol) – Himmel und Licht:
+
+| Szene | Beschreibung |
 | --- | --- |
-| **Minimal Standard** | Für schwächere Geräte – reduzierter Detailgrad, keine Schatten. |
-| **Realistisch** | Sonne, Wolken, Schatten und atmosphärische Beleuchtung – für leistungsstarke Rechner. |
-| **Nacht** | Neonfarbene Gates mit Bloom-Effekt unter einem Sternenhimmel. |
+| **Tag** | Heller Himmel, neutrales Sonnenlicht. Standard. |
+| **Dämmerung** | Tiefstehende, warme Sonne mit orangem Horizont. |
+| **Nacht** | Sternenhimmel, neonfarbene leuchtende Gates mit Glow-Effekt. |
+| **Studio** | Neutraler dunkler Hintergrund und gleichmäßiges Licht – gut für Screenshots und Präsentationen. |
 
-Das gewählte Theme wird mit der Strecke gespeichert und **beim Teilen mitgegeben** – Empfänger sehen deine Strecke also im gleichen Look.
+**Grafikqualität** (ebenfalls unter **Darstellung**):
+
+- **Einfach** – schnell, auch auf schwächeren Geräten; ohne Schatten und Umgebungslicht.
+- **Realistisch** – mit Schatten, Umgebungslicht und sichtbarer Sonne (bei Tag und Dämmerung); braucht einen leistungsstärkeren Rechner.
+
+**Untergrund** (Panel **Feld**): **Rasen**, **Turnsaal** oder **Asphalt**. Ändert die Spielfläche sowie Feldbegrenzung und Grid-Linien. Der Turnsaal zeigt einen Fischgrät-Parkettboden aus Eiche mit Spielfeldlinien (Handballfeld mit Torräumen und Mittelkreis), die sich an die Feldgröße anpassen.
+
+Alle drei Einstellungen werden mit der Strecke gespeichert, exportiert und **beim Teilen mitgegeben** – Empfänger sehen deine Strecke also im gleichen Look. Ältere Strecken und Links mit den früheren Themes werden automatisch umgerechnet: *Minimal* → Tag + Einfach, *Realistisch* → Tag + Realistisch, *Nacht* → Nacht + Realistisch (jeweils mit Rasen).
 
 ---
 
@@ -218,7 +228,7 @@ Das gewählte Theme wird mit der Strecke gespeichert und **beim Teilen mitgegebe
 
 Im Menü **Exportieren** in der Kopfzeile findest du **Als JSON** und **Importieren…**:
 
-- **Export:** speichert die aktuell geladene Strecke (Gates, Reihenfolge, Konfiguration, Theme) als JSON-Datei zum Sichern oder Weitergeben.
+- **Export:** speichert die aktuell geladene Strecke (Gates, Reihenfolge, Konfiguration, Szene, Untergrund und Grafikqualität) als JSON-Datei zum Sichern oder Weitergeben.
 - **Import:** lädt eine zuvor exportierte oder von anderen Piloten erhaltene JSON-Datei. Beim Import wird die aktuelle Strecke ersetzt – bei ungespeicherten Änderungen fragt die App vorher nach.
 - Ältere/legacy Track-Dateien werden beim Import automatisch auf das aktuelle Format normalisiert.
 

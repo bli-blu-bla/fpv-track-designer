@@ -34,14 +34,14 @@ Layer rules and per-layer details: `src/AGENTS.md`, `src/core/AGENTS.md`, `src/s
 | Editor shell / first-load flow | `src/editor/App.tsx`, `src/main.tsx` | StrictMode is enabled; mount effects must be idempotent |
 | Translations / language toggle | `src/i18n.ts` | Add DE + EN keys together; consumers use `useTranslation()` |
 | Add/change a gate type | `src/core/gates/gateDefinitions.ts`, `src/scene/gates/` | Extend `GATE_TYPES`, then fix compile errors |
-| 3D scene/camera/themes | `src/scene/`, `src/core/types/theme.ts`, `src/core/theme/themeColors.ts` | Scene is prop-driven; theme via `useSceneTheme()` |
+| 3D scene/camera/look | `src/scene/`, `src/core/types/theme.ts`, `src/core/theme/themeColors.ts` | Scene is prop-driven; resolved look via `useSceneTheme()` |
 | Toolbar / side rail / pole counter | `src/editor/layout/` | Import/export, FPV toggle, share, shuffle |
 | Panels and dialogs | `src/editor/panels/` | Primitives stay in `src/components/ui/` |
 | Gate selection / drag handles | `src/editor/gates/` | `gateHandleMath.ts` is pure and tested |
 | Store state/actions | `src/editor/store/` | Slices, `applyEdit()`, history, destructive-action flow |
 | Track generation | `src/core/track/generator.ts` | Min 3m gate distance, nearest-neighbor order, 30 degree rotation alignment |
 | Flight path logic | `src/core/track/flightPath.ts` | Dense geometry/avoidance algorithm; test edge cases |
-| Import/export/storage validation | `src/core/schemas/track.schema.ts` | Zod, format 2.0.0, legacy 1.x support |
+| Import/export/storage validation | `src/core/schemas/track.schema.ts` | Zod, format 2.1.0, legacy 1.x/2.0 support |
 | Share-link payloads | `src/core/schemas/compactTrack.schema.ts`, `src/core/share/shareTrack.ts` | `c.` compact, `z.`/base64 legacy |
 | Persistence | `src/editor/storage.ts` | Browser `localStorage`; schema does validation |
 | Share viewer | `src/viewer/` | Hash payload -> decoded track/config -> read-only `Scene` |
@@ -62,7 +62,7 @@ Layer rules and per-layer details: `src/AGENTS.md`, `src/core/AGENTS.md`, `src/s
 | `calculateFlightPath` | function | `src/core/track/flightPath.ts` | Path segments, samples, arrows, gate-specific avoidance |
 | `serializeTrack` / `deserializeTrack` / `parseTrackExport` | functions | `src/core/schemas/track.schema.ts` | Persistence boundary |
 | `encodeTrackSharePayload` / `decodeTrackSharePayload` | functions | `src/core/share/shareTrack.ts` | Share link payload boundary |
-| `THEME_PRESETS` | constant | `src/core/types/theme.ts` | Minimal/realistic/night renderer and color presets |
+| `SKY_PRESETS` / `GROUND_PRESETS` / `QUALITY_PRESETS` / `getSceneLook` | constants / function | `src/core/types/theme.ts`, `src/core/theme/themeColors.ts` | Scene look = sky × ground × quality, resolved to one `ThemeConfig` |
 | `FpvFlyThrough` | component | `src/scene/FpvFlyThrough.tsx` | Automated FPV camera flight |
 
 ## CONVENTIONS
@@ -96,7 +96,7 @@ Layer rules and per-layer details: `src/AGENTS.md`, `src/core/AGENTS.md`, `src/s
 - Undo/redo: `past`/`future` arrays, `MAX_HISTORY=50`, dirty flag captured in history entries.
 - Flight path: gate-sequence visits, Bezier sampling, disjoint native `THREE.Line` segments, arrows along path.
 - Camera controls: Space/right-click pan, Shift vertical pan, wheel/middle-click smooth zoom.
-- Themes: `minimal`, `realistic`, `night`; night enables lazily loaded bloom (`NightBloom.tsx`) and neon emissive gates.
+- Scene look: `config.sky` (day/dusk/night/studio), `config.ground` (grass/hall/asphalt), `config.quality` (simple/realistic). Night sky enables lazily loaded bloom (`NightBloom.tsx`), neon emissive gates and an unlit, darkened ground. Legacy `config.theme` values are mapped in the schema (`LEGACY_THEME_LOOKS`).
 - Import/export schema keeps legacy compatibility explicit, e.g. 1.x files with full openings and the old `asymmetric` gate type.
 - Share links use compact `c.` payloads (~200 chars for 11 gates) and still decode `z.` and legacy base64-url payloads.
 - UI copy is bilingual through `src/i18n.ts`; add DE/EN keys together.

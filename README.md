@@ -20,7 +20,7 @@ Das Projekt kombiniert eine interaktive React-Oberfläche mit einer Three.js/R3F
 - **Import/Export** von Strecken als JSON
 - **Track teilen** per Link (lang + Kurzlink) und QR-Code (PNG/SVG), angezeigt im Read-only-Viewer
 - **FPV-Flug**: automatischer Durchflug der Strecke aus Pilotensicht
-- **Themes**: Minimal, Realistisch und Nacht
+- **Szene, Untergrund und Grafikqualität**: Tag, Dämmerung, Nacht (Neon) oder Studio; Rasen, Turnsaal (Parkett mit Spielfeldlinien) oder Asphalt; einfache oder realistische Grafik
 - **Stangenzähler** für den Materialbedarf
 - **Sprache** Deutsch/Englisch umschaltbar
 - **Keyboard-Shortcuts** für schnelle Bedienung
@@ -127,7 +127,7 @@ Alternativ kann die Ansicht auch mit `Space + linke Maustaste ziehen` verschoben
 ```text
 src/
 ├── core/        # Domänenlogik ohne React: Typen, Gate-Definitionen, Generator,
-│                # Flugpfad, Zod-Schemas, Share-Link-Format, Theme-Farben
+│                # Flugpfad, Zod-Schemas, Share-Link-Format, Szenen-Presets
 ├── scene/       # Gemeinsame 3D-Szene (R3F): Canvas, Kamera, Gates, Flugpfad
 ├── editor/      # Editor: App, Zustand-Store, Speicher, Panels, Bearbeitungs-Handles
 ├── viewer/      # Read-only Share-Viewer

@@ -24,7 +24,9 @@ const config: Config = {
   showFlightPath: true,
   showOpeningLabels: true,
   showGrid: false,
-  theme: 'minimal',
+  sky: 'day',
+  ground: 'grass',
+  quality: 'simple',
 }
 
 const track: Track = {
@@ -246,6 +248,24 @@ describe('track schema', () => {
     })
   })
 
+  it('maps the legacy theme of older files to sky and quality', () => {
+    const legacyConfig = Object.fromEntries(Object.entries(config).filter(([key]) => !['sky', 'ground', 'quality'].includes(key)))
+    const result = deserializeTrack(JSON.stringify({ version: '2.0.0', track, config: { ...legacyConfig, theme: 'realistic' } }))
+
+    expect('error' in result).toBe(false)
+    if ('error' in result) return
+    expect(result.config).toMatchObject({ sky: 'day', ground: 'grass', quality: 'realistic' })
+    expect('theme' in result.config).toBe(false)
+  })
+
+  it('round-trips sky, ground and quality', () => {
+    const result = deserializeTrack(serializeTrack(track, { ...config, sky: 'studio', ground: 'hall', quality: 'realistic' }))
+
+    expect('error' in result).toBe(false)
+    if ('error' in result) return
+    expect(result.config).toMatchObject({ sky: 'studio', ground: 'hall', quality: 'realistic' })
+  })
+
   it('rejects unsupported theme ids in track payload', () => {
     const unsupportedThemePayload = JSON.stringify({
       version: '1.2.0',
@@ -265,6 +285,14 @@ describe('track schema', () => {
       field: 'config.theme',
       message: 'Theme must be one of: minimal, realistic, night',
     })
+  })
+
+  it('rejects unsupported ground ids', () => {
+    const result = deserializeTrack(JSON.stringify({ version: '2.1.0', track, config: { ...config, ground: 'ice' } }))
+
+    expect('error' in result).toBe(true)
+    if (!('error' in result)) return
+    expect(result.errors).toContainEqual({ field: 'config.ground', message: 'Ground must be one of: grass, hall, asphalt' })
   })
 
   it('round-trips configured snap grid size', () => {
@@ -301,7 +329,7 @@ describe('track schema', () => {
   it('stores only user state: no opening geometry and no default gate sequence', () => {
     const exported = JSON.parse(serializeTrack(track, config))
 
-    expect(exported.version).toBe('2.0.0')
+    expect(exported.version).toBe('2.1.0')
     expect(exported.track.gates[0]).not.toHaveProperty('openings')
     expect(exported.track).not.toHaveProperty('gateSequence')
   })

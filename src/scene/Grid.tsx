@@ -1,7 +1,9 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import type { ThreeEvent } from '@react-three/fiber'
 import { Text } from '@react-three/drei'
 import { isCameraTouchGesture } from './pointer'
+import { getParquetTexture, PARQUET_TILE_METERS } from './parquetTexture'
+import { CourtMarkings } from './CourtMarkings'
 import type { ThemeColors } from '@/core/types/theme'
 
 interface GridProps {
@@ -44,6 +46,21 @@ export function Grid({ fieldSize = { width: 100, height: 100 }, colors, showGrid
     }
   }, [halfH, halfW])
 
+  // One shared canvas image; each field size gets its own clone for the repeat.
+  const surfaceTexture = useMemo(() => {
+    if (colors.groundPattern !== 'parquet') return null
+
+    const texture = getParquetTexture().clone()
+    texture.repeat.set(fieldSize.width / PARQUET_TILE_METERS, fieldSize.height / PARQUET_TILE_METERS)
+    texture.needsUpdate = true
+    return texture
+  }, [colors.groundPattern, fieldSize.width, fieldSize.height])
+  const surfaceColor = surfaceTexture ? colors.groundTint ?? '#ffffff' : colors.groundSurface
+  useEffect(() => () => surfaceTexture?.dispose(), [surfaceTexture])
+  // three.js only recompiles a material's shader when `needsUpdate` is set; adding or removing a map
+  // in place leaves the old shader (and pattern) active, so a new material is created instead.
+  const materialKey = surfaceTexture ? `textured:${surfaceTexture.uuid}` : 'plain'
+
   const handleGroundClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation()
     if (isCameraTouchGesture(e)) return
@@ -58,7 +75,7 @@ export function Grid({ fieldSize = { width: 100, height: 100 }, colors, showGrid
         <meshStandardMaterial color={colors.groundEarth} roughness={0.94} metalness={0} />
       </mesh>
 
-      {/* Ground plane - grass. Theme colors come from Scene; do not read the store here. */}
+      {/* Ground plane. Colors and pattern come from the resolved scene look; do not read the store here. */}
       <mesh
         rotation-x={-Math.PI / 2}
         position={[0, 0, 0]}
@@ -67,11 +84,19 @@ export function Grid({ fieldSize = { width: 100, height: 100 }, colors, showGrid
       >
         <planeGeometry args={[fieldSize.width, fieldSize.height]} />
         {useUnlitGround ? (
-          <meshBasicMaterial color={colors.groundGrass} toneMapped={false} fog={false} />
+          <meshBasicMaterial key={materialKey} color={surfaceColor} map={surfaceTexture} toneMapped={false} fog={false} />
         ) : (
-          <meshStandardMaterial color={colors.groundGrass} roughness={0.95} metalness={0} />
+          <meshStandardMaterial
+            key={materialKey}
+            color={surfaceColor}
+            map={surfaceTexture}
+            roughness={surfaceTexture ? 0.7 : 0.95}
+            metalness={0}
+          />
         )}
       </mesh>
+
+      {colors.courtLines && <CourtMarkings fieldSize={fieldSize} lines={colors.courtLines} unlit={useUnlitGround} />}
 
       {/* Field boundary — always visible, independent from the optional inner grid. */}
       <group position={[0, 0.025, 0]}>

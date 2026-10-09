@@ -2,7 +2,7 @@ import { z } from 'zod'
 import type { Config } from '@/core/types/config'
 import type { Gate, GateType } from '@/core/types/gate'
 import { GATE_TYPES } from '@/core/types/gate'
-import { THEME_IDS } from '@/core/types/theme'
+import { GROUND_IDS, QUALITY_IDS, SKY_IDS, type LegacyThemeId, type SceneLookSettings } from '@/core/types/theme'
 import type { Track } from '@/core/types/track'
 import { GATE_DEFINITIONS, GATE_ID_VARIANT_COUNT, getGateIdVariant, hashGateId } from '@/core/gates/gateDefinitions'
 import { buildFallbackGateSequence } from '@/core/gates/gateSequence'
@@ -11,7 +11,8 @@ import { parseTrackExport, SCHEMA_VERSION, type DeserializeResult, type TrackExp
 /**
  * Compact, positional share-link format. Only what the viewer needs survives:
  *
- *   [version, name, fieldWidth, fieldHeight, themeIndex, displayFlags, gates, sequence?]
+ *   [version, name, fieldWidth, fieldHeight, look, displayFlags, gates, sequence?]
+ *   look     = skyIndex * 8 + groundIndex * 2 + qualityIndex   (version 1: index into LEGACY_THEME_ORDER)
  *   gate     = [typeIndex, xCm, zCm, rotationDeg, yCm?, idVariant?, reversedOpeningMask?]
  *   sequence = gateIndex * 16 + openingIndex * 2 + reverse   (omitted when it is the default lap)
  *
@@ -20,7 +21,12 @@ import { parseTrackExport, SCHEMA_VERSION, type DeserializeResult, type TrackExp
  * exits and h-gate backrests look identical. Trailing default values are trimmed.
  * Decoded payloads still pass through `trackExportSchema`.
  */
-const COMPACT_FORMAT_VERSION = 1
+const COMPACT_FORMAT_VERSION = 2
+const LEGACY_COMPACT_FORMAT_VERSION = 1
+/** Theme order of version-1 links; frozen. */
+const LEGACY_THEME_ORDER: readonly LegacyThemeId[] = ['minimal', 'realistic', 'night']
+const LOOK_SKY_FACTOR = 8
+const LOOK_GROUND_FACTOR = 2
 const SEQUENCE_GATE_FACTOR = 16
 const MAX_OPENINGS_PER_GATE = SEQUENCE_GATE_FACTOR / 2
 
@@ -40,11 +46,11 @@ const compactGateSchema = z.tuple([
 ]).rest(int)
 
 const compactTrackSchema = z.tuple([
-  z.literal(COMPACT_FORMAT_VERSION),
+  z.union([z.literal(COMPACT_FORMAT_VERSION), z.literal(LEGACY_COMPACT_FORMAT_VERSION)]),
   z.string(),
   z.number().positive(),
   z.number().positive(),
-  int.min(0).max(THEME_IDS.length - 1),
+  int.min(0),
   int.min(0),
   z.array(compactGateSchema),
 ]).rest(z.array(int.min(0)))
@@ -101,11 +107,26 @@ export function encodeCompactTrack(track: Track, config: Config): string {
     track.name,
     track.fieldSize.width,
     track.fieldSize.height,
-    THEME_IDS.indexOf(config.theme),
+    encodeLook(config),
     flags,
     track.gates.map(encodeGate),
     ...(sequence ? [sequence] : []),
   ])
+}
+
+function encodeLook({ sky, ground, quality }: SceneLookSettings): number {
+  return SKY_IDS.indexOf(sky) * LOOK_SKY_FACTOR + GROUND_IDS.indexOf(ground) * LOOK_GROUND_FACTOR + QUALITY_IDS.indexOf(quality)
+}
+
+/** Look fields for the export object; unknown indices become undefined and fall back to defaults in the schema. */
+function decodeLook(version: number, look: number): Partial<SceneLookSettings> & { theme?: LegacyThemeId } {
+  if (version === LEGACY_COMPACT_FORMAT_VERSION) return { theme: LEGACY_THEME_ORDER[look] }
+
+  return {
+    sky: SKY_IDS[Math.floor(look / LOOK_SKY_FACTOR)],
+    ground: GROUND_IDS[Math.floor((look % LOOK_SKY_FACTOR) / LOOK_GROUND_FACTOR)],
+    quality: QUALITY_IDS[look % LOOK_GROUND_FACTOR],
+  }
 }
 
 /** Short id whose `getGateIdVariant` equals `variant`, e.g. `g3b`. */
@@ -117,7 +138,7 @@ function createGateId(index: number, variant: number): string {
 }
 
 function toTrackExport(compact: z.infer<typeof compactTrackSchema>): TrackExportInput {
-  const [, name, width, height, themeIndex, flags, compactGates, sequence] = compact
+  const [version, name, width, height, look, flags, compactGates, sequence] = compact
   const now = new Date().toISOString()
 
   const gates = compactGates.map(([typeIndex, xCm, zCm, rotation, yCm = 0, variant = 0, reversedMask = 0], index) => {
@@ -161,7 +182,7 @@ function toTrackExport(compact: z.infer<typeof compactTrackSchema>): TrackExport
       showGrid: Boolean(flags & DISPLAY_FLAGS.showGrid),
       showFlightPath: Boolean(flags & DISPLAY_FLAGS.showFlightPath),
       showOpeningLabels: Boolean(flags & DISPLAY_FLAGS.showOpeningLabels),
-      theme: THEME_IDS[themeIndex],
+      ...decodeLook(version, look),
     },
   }
 }

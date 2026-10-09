@@ -14,7 +14,8 @@ export function Flag({ position, rotation, openings, openingLabels, isSelected, 
   const height = BASE_HEIGHT
   const theme = useSceneTheme()
   const { color, emissiveColor, emissiveIntensity } = getGateColors(theme.colors, 'flag', !!isSelected)
-  const poleColor = theme.id === 'night' ? color : getFlagPoleColor()
+  // Neon (bloom) skies light the whole flag; otherwise the pole is wood.
+  const poleColor = theme.bloom ? color : getFlagPoleColor()
 
   return (
     <group

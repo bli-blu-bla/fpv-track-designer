@@ -4,7 +4,7 @@ import { OrbitControls, Stars, Environment } from '@react-three/drei'
 import { ACESFilmicToneMapping, AdditiveBlending, CanvasTexture, MOUSE } from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { buildDefaultGateSequenceEntries } from '@/core/gates/gateSequence'
-import { getThemeConfig } from '@/core/theme/themeColors'
+import { getSceneLook } from '@/core/theme/themeColors'
 import { Gate, type SceneGateProps } from './gates/Gate'
 import { SceneThemeContext } from './SceneTheme'
 
@@ -44,8 +44,7 @@ interface SceneProps {
  */
 export function Scene({ track: currentTrack, config, gateComponent: GateView = Gate, onGroundClick, fpvModeActive = false, onFpvComplete, viewMode = 'perspective', viewResetToken = 0, onSnapshotReady }: SceneProps) {
   const controlsRef = useRef<OrbitControlsImpl>(null)
-  const theme = useMemo(() => getThemeConfig(config.theme), [config.theme])
-  const usesMinimalScene = theme.useSkyDome
+  const theme = getSceneLook(config)
   const flightPath = useMemo(() => {
     if (!currentTrack) return null
     return calculateFlightPath(currentTrack.gates, currentTrack.gateSequence)
@@ -183,122 +182,82 @@ export function Scene({ track: currentTrack, config, gateComponent: GateView = G
         toneMapping: ACESFilmicToneMapping,
         toneMappingExposure: theme.toneMappingExposure,
       }}
-      shadows={theme.useShadows}
+      shadows={theme.shadows}
       camera={{ position: [0, 30, 30], fov: 50, near: 0.1, far: 1000 }}
       style={{ width: '100%', height: '100%', touchAction: 'none' }}
     >
       <SceneThemeContext.Provider value={theme}>
-      {/* ── MINIMAL THEMES ──────────────────────────────────────────────────── */}
-      {usesMinimalScene && (
-        <>
-          <SkyDome
-            topColor={theme.colors.skyTop}
-            midColor={theme.colors.skyMid}
-            horizonColor={theme.colors.skyHorizon}
-            bottomColor={theme.colors.skyBottom}
-            sunColor={theme.colors.skySun}
-          />
-          <fog attach="fog" args={[theme.colors.fogColor, theme.colors.fogNear, theme.colors.fogFar]} />
-          <hemisphereLight args={[theme.colors.hemisphereSky, theme.colors.hemisphereGround, theme.colors.hemisphereIntensity]} />
-          <directionalLight
-            position={theme.colors.sunPosition}
-            intensity={theme.colors.sunIntensity}
-            color={theme.colors.sunColor}
-          />
-          <directionalLight
-            position={theme.colors.fillPosition}
-            intensity={theme.colors.fillIntensity}
-            color={theme.colors.fillColor}
-          />
-          <ambientLight intensity={theme.colors.ambientIntensity} color={theme.colors.ambientColor} />
-          <Grid fieldSize={config.fieldSize} colors={theme.colors} showGrid={config.showGrid} onGroundClick={onGroundClick} />
-          {trackContent}
-          {cameraControls}
-        </>
-      )}
-
-      {/* ── REALISTIC THEME ──────────────────────────────────────────────────── */}
-      {theme.id === 'realistic' && (
-        <>
-          <SkyDome
-            topColor={theme.colors.skyTop}
-            midColor={theme.colors.skyMid}
-            horizonColor={theme.colors.skyHorizon}
-            bottomColor={theme.colors.skyBottom}
-            sunColor={theme.colors.skySun}
-          />
-          <group position={[82, 20, -66]}>
-            <sprite scale={[48, 48, 1]} renderOrder={2}>
-              <spriteMaterial map={sunGlowTexture} transparent opacity={0.95} depthTest={false} depthWrite={false} blending={AdditiveBlending} toneMapped={false} />
-            </sprite>
-            <sprite scale={[24, 24, 1]} renderOrder={3}>
-              <spriteMaterial map={sunGlowTexture} transparent opacity={0.55} depthTest={false} depthWrite={false} blending={AdditiveBlending} toneMapped={false} />
-            </sprite>
-            <mesh renderOrder={4}>
-              <sphereGeometry args={[4.8, 32, 32]} />
-              <meshBasicMaterial color="#FFF2A6" toneMapped={false} depthTest={false} depthWrite={false} fog={false} />
-            </mesh>
-          </group>
-          <Environment preset={theme.environmentPreset as 'sunset' | 'night'} environmentIntensity={theme.environmentIntensity} />
-          <fog attach="fog" args={[theme.colors.fogColor, theme.colors.fogNear, theme.colors.fogFar]} />
-          <hemisphereLight args={[theme.colors.hemisphereSky, theme.colors.hemisphereGround, theme.colors.hemisphereIntensity]} />
-          <directionalLight
-            position={theme.colors.sunPosition}
-            intensity={theme.colors.sunIntensity}
-            color={theme.colors.sunColor}
-            castShadow
-            shadow-mapSize-width={2048}
-            shadow-mapSize-height={2048}
-            shadow-camera-far={200}
-            shadow-camera-left={-50}
-            shadow-camera-right={50}
-            shadow-camera-top={50}
-            shadow-camera-bottom={-50}
-            shadow-bias={-0.00015}
-            shadow-normalBias={0.02}
-          />
-          <directionalLight
-            position={theme.colors.fillPosition}
-            intensity={theme.colors.fillIntensity}
-            color={theme.colors.fillColor}
-          />
-          <ambientLight intensity={theme.colors.ambientIntensity} color={theme.colors.ambientColor} />
-          <Grid fieldSize={config.fieldSize} colors={theme.colors} showGrid={config.showGrid} onGroundClick={onGroundClick} />
-          {trackContent}
-          {cameraControls}
-        </>
-      )}
-
-      {/* ── NIGHT THEME ─────────────────────────────────────────────────────── */}
-      {theme.id === 'night' && (
+      {theme.background === 'stars' ? (
         <>
           <color attach="background" args={[theme.colors.skyTop]} />
           <Stars radius={100} depth={60} count={4000} factor={3} saturation={0} fade speed={0.5} />
-          <Environment preset={theme.environmentPreset as 'sunset' | 'night'} environmentIntensity={theme.environmentIntensity} />
-          <fog attach="fog" args={[theme.colors.fogColor, theme.colors.fogNear, theme.colors.fogFar]} />
-          <hemisphereLight args={[theme.colors.hemisphereSky, theme.colors.hemisphereGround, theme.colors.hemisphereIntensity]} />
-          <directionalLight
-            position={theme.colors.sunPosition}
-            intensity={theme.colors.sunIntensity}
-            color={theme.colors.sunColor}
-          />
-          <directionalLight
-            position={theme.colors.fillPosition}
-            intensity={theme.colors.fillIntensity}
-            color={theme.colors.fillColor}
-          />
-          <ambientLight intensity={theme.colors.ambientIntensity} color={theme.colors.ambientColor} />
-          {/* Night field colors use the unlit Grid path so ThemeColors.groundGrass is visible as authored. */}
-          <Grid fieldSize={config.fieldSize} colors={theme.colors} showGrid={config.showGrid} useUnlitGround onGroundClick={onGroundClick} />
-          {currentTrack && (
-            <Suspense fallback={null}>
-              <NightBloom />
-            </Suspense>
-          )}
-          {trackContent}
-          {cameraControls}
         </>
+      ) : theme.background === 'flat' ? (
+        <color attach="background" args={[theme.colors.skyTop]} />
+      ) : (
+        <SkyDome
+          topColor={theme.colors.skyTop}
+          midColor={theme.colors.skyMid}
+          horizonColor={theme.colors.skyHorizon}
+          bottomColor={theme.colors.skyBottom}
+          sunColor={theme.colors.skySun}
+        />
       )}
+      {theme.sunGlow && (
+        <group position={[82, 20, -66]}>
+          <sprite scale={[48, 48, 1]} renderOrder={2}>
+            <spriteMaterial map={sunGlowTexture} transparent opacity={0.95} depthTest={false} depthWrite={false} blending={AdditiveBlending} toneMapped={false} />
+          </sprite>
+          <sprite scale={[24, 24, 1]} renderOrder={3}>
+            <spriteMaterial map={sunGlowTexture} transparent opacity={0.55} depthTest={false} depthWrite={false} blending={AdditiveBlending} toneMapped={false} />
+          </sprite>
+          <mesh renderOrder={4}>
+            <sphereGeometry args={[4.8, 32, 32]} />
+            <meshBasicMaterial color="#FFF2A6" toneMapped={false} depthTest={false} depthWrite={false} fog={false} />
+          </mesh>
+        </group>
+      )}
+      {theme.environment && (
+        <Environment preset={theme.environment.preset} environmentIntensity={theme.environment.intensity} />
+      )}
+      <fog attach="fog" args={[theme.colors.fogColor, theme.colors.fogNear, theme.colors.fogFar]} />
+      <hemisphereLight args={[theme.colors.hemisphereSky, theme.colors.hemisphereGround, theme.colors.hemisphereIntensity]} />
+      <directionalLight
+        position={theme.colors.sunPosition}
+        intensity={theme.colors.sunIntensity}
+        color={theme.colors.sunColor}
+        castShadow={theme.shadows}
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
+        shadow-camera-far={200}
+        shadow-camera-left={-50}
+        shadow-camera-right={50}
+        shadow-camera-top={50}
+        shadow-camera-bottom={-50}
+        shadow-bias={-0.00015}
+        shadow-normalBias={0.02}
+      />
+      <directionalLight
+        position={theme.colors.fillPosition}
+        intensity={theme.colors.fillIntensity}
+        color={theme.colors.fillColor}
+      />
+      <ambientLight intensity={theme.colors.ambientIntensity} color={theme.colors.ambientColor} />
+      {/* Unlit grounds (night) show `groundSurface` as authored, unaffected by dim light, tone mapping and fog. */}
+      <Grid
+        fieldSize={config.fieldSize}
+        colors={theme.colors}
+        showGrid={config.showGrid}
+        useUnlitGround={theme.unlitGround}
+        onGroundClick={onGroundClick}
+      />
+      {theme.bloom && currentTrack && (
+        <Suspense fallback={null}>
+          <NightBloom />
+        </Suspense>
+      )}
+      {trackContent}
+      {cameraControls}
       </SceneThemeContext.Provider>
     </Canvas>
   )

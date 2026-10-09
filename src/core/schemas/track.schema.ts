@@ -3,7 +3,7 @@ import type { Config } from '@/core/types/config'
 import { SNAP_GRID_SIZES } from '@/core/types/config'
 import type { Gate, GateType } from '@/core/types/gate'
 import { GATE_TYPES } from '@/core/types/gate'
-import { THEME_IDS } from '@/core/types/theme'
+import { DEFAULT_SCENE_LOOK, GROUND_IDS, LEGACY_THEME_LOOKS, QUALITY_IDS, SKY_IDS, type LegacyThemeId } from '@/core/types/theme'
 import type { GateSequenceItem, Track } from '@/core/types/track'
 import { GATE_DEFINITIONS } from '@/core/gates/gateDefinitions'
 import { normalizeGates } from '@/core/gates/gateOpenings'
@@ -12,8 +12,11 @@ import { buildFallbackGateSequence, normalizeGateSequence } from '@/core/gates/g
 /**
  * 2.x stores only what users can change: opening geometry is derived from the
  * gate type, unchanged defaults are omitted. 1.x files (full openings) still load.
+ * 2.1 replaces `config.theme` with `sky`, `ground` and `quality`; older files map their theme.
  */
-export const SCHEMA_VERSION = '2.0.0'
+export const SCHEMA_VERSION = '2.1.0'
+
+const LEGACY_THEME_IDS = Object.keys(LEGACY_THEME_LOOKS) as [LegacyThemeId, ...LegacyThemeId[]]
 
 export interface ValidationError {
   field: string
@@ -136,8 +139,21 @@ const configSchema = z.object({
   showGrid: z.boolean({ error: 'Config value must be a boolean when provided' }).default(false),
   showFlightPath: z.boolean({ error: 'Config value must be a boolean when provided' }).default(true),
   showOpeningLabels: z.boolean({ error: 'Config value must be a boolean when provided' }).default(true),
-  theme: z.enum(THEME_IDS, { error: `Theme must be one of: ${THEME_IDS.join(', ')}` }).default('minimal'),
-}, { error: 'Config must be an object' })
+  sky: z.enum(SKY_IDS, { error: `Sky must be one of: ${SKY_IDS.join(', ')}` }).optional(),
+  ground: z.enum(GROUND_IDS, { error: `Ground must be one of: ${GROUND_IDS.join(', ')}` }).optional(),
+  quality: z.enum(QUALITY_IDS, { error: `Quality must be one of: ${QUALITY_IDS.join(', ')}` }).optional(),
+  // Legacy (< 2.1): one theme combined sky and quality.
+  theme: z.enum(LEGACY_THEME_IDS, { error: `Theme must be one of: ${LEGACY_THEME_IDS.join(', ')}` }).optional(),
+}, { error: 'Config must be an object' }).transform(({ theme, sky, ground, quality, ...config }): Config => {
+  const legacy = theme ? LEGACY_THEME_LOOKS[theme] : undefined
+
+  return {
+    ...config,
+    sky: sky ?? legacy?.sky ?? DEFAULT_SCENE_LOOK.sky,
+    ground: ground ?? DEFAULT_SCENE_LOOK.ground,
+    quality: quality ?? legacy?.quality ?? DEFAULT_SCENE_LOOK.quality,
+  }
+})
 
 export const trackExportSchema = z.object({
   version: z.string({ error: 'Version must be a string' }),
@@ -237,7 +253,9 @@ export function toTrackExport(track: Track, config: Config): TrackExportInput {
       showGrid: config.showGrid,
       showFlightPath: config.showFlightPath,
       showOpeningLabels: config.showOpeningLabels,
-      theme: config.theme,
+      sky: config.sky,
+      ground: config.ground,
+      quality: config.quality,
     },
   }
 }

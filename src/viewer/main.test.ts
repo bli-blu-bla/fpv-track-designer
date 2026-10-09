@@ -103,7 +103,9 @@ describe('viewer-main', () => {
       trackName: '',
       gridSize: 10,
       gateSize: 'medium',
-      theme: 'minimal',
+      sky: 'day',
+      ground: 'grass',
+      quality: 'simple',
     }
 
     mockDecodeTrackSharePayload.mockReturnValue({ track, config })

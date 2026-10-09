@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand'
-import type { Config, GateType, SnapGridSize, ThemeId } from '@/core/types'
+import type { Config, GateType, SceneLookSettings, SnapGridSize } from '@/core/types'
 import { defaultConfig } from '@/core/defaultConfig'
 
 export interface ConfigSlice {
@@ -12,7 +12,8 @@ export interface ConfigSlice {
   setShowGrid: (value: boolean) => void
   setShowFlightPath: (value: boolean) => void
   setShowOpeningLabels: (value: boolean) => void
-  setTheme: (theme: ThemeId) => void
+  /** Sky, ground and graphics quality; saved with the track. */
+  setSceneLook: (look: Partial<SceneLookSettings>) => void
   resetToDefault: () => void
 }
 
@@ -45,8 +46,8 @@ export const createConfigSlice: StateCreator<ConfigSlice, [], [], ConfigSlice> =
   setShowOpeningLabels: (value) => set((state) => ({
     config: { ...state.config, showOpeningLabels: value },
   })),
-  setTheme: (theme) => set((state) => ({
-    config: { ...state.config, theme },
+  setSceneLook: (look) => set((state) => ({
+    config: { ...state.config, ...look },
   })),
   resetToDefault: () => set({ config: defaultConfig }),
 })
