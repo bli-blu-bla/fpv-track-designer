@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { FocusEvent, KeyboardEvent } from 'react'
 import { useAppStore } from '@/store'
-import { gateTypeOptions } from '@/utils/gateTypeOptions'
+import { GATE_TYPES } from '@/types'
 import { GateIcon } from '@/components/icons/GateIcon'
 import {
   Card,
@@ -87,7 +87,7 @@ export function GateConfigPanel() {
             />
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-3 pt-3">
-            {gateTypeOptions.map(({ type }) => (
+            {GATE_TYPES.map((type) => (
               <div
                 key={type}
                 className="flex items-center justify-between gap-2"

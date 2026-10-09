@@ -3,11 +3,12 @@ import { useAppStore } from './store'
 import { generateTrack } from './utils/generator'
 import { extractGenerationConfig } from './utils/generationConfig'
 import { createDefaultGateOpenings } from './utils/gateOpenings'
-import { gateTypeOptions } from './utils/gateTypeOptions'
+import { GATE_DEFINITIONS } from './utils/gateDefinitions'
 import { GateIcon } from './components/icons/GateIcon'
 import { defaultConfig } from './store/configSlice'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import type { GateType } from './types'
+import { GATE_TYPES } from './types'
 import { SaveTrackDialog } from './components/ui/SaveTrackDialog'
 import { UnsavedChangesDialog } from './components/ui/UnsavedChangesDialog'
 import { TrackGallery } from './components/ui/TrackGallery'
@@ -139,7 +140,7 @@ function App() {
 
   const singletonGateTypes = new Set<GateType>(
     currentTrack?.gates
-      .filter((gate) => gate.type === 'start-finish')
+      .filter((gate) => GATE_DEFINITIONS[gate.type].isStartFinish)
       .map((gate) => gate.type) ?? [],
   )
 
@@ -284,22 +285,22 @@ function App() {
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
-            {gateTypeOptions.map((option) => {
-              const disabled = singletonGateTypes.has(option.type)
+            {GATE_TYPES.map((type) => {
+              const disabled = singletonGateTypes.has(type)
 
               return (
                 <Button
-                  key={option.type}
+                  key={type}
                   type="button"
                   variant="outline"
                   className="flex h-auto justify-start gap-3 py-3 text-left"
                   disabled={disabled}
-                  onClick={() => handleInsertGate(option.type)}
+                  onClick={() => handleInsertGate(type)}
                 >
                   <span className="flex w-10 shrink-0 justify-center">
-                    <GateIcon type={option.type} className="size-6" />
+                    <GateIcon type={type} className="size-6" />
                   </span>
-                  <span>{gateTypeLabel(option.type)}</span>
+                  <span>{gateTypeLabel(type)}</span>
                 </Button>
               )
             })}

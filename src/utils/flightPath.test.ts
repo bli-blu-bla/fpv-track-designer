@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { calculateFlightPath, DIVE_TOP_APPROACH_CLEARANCE, GATE_BASE_HEIGHT, GATE_STRUCTURE_CLEARANCE } from './flightPath'
 import type { Gate, GateSequenceItem } from '../types'
-import { createDefaultGateOpenings, getHGateBackrestSide } from './gateOpenings'
+import { createDefaultGateOpenings } from './gateOpenings'
+import { getHGateBackrestSide } from './gateDefinitions'
 
 const createGate = (id: string, x: number, y: number, z: number): Gate => ({
   id,

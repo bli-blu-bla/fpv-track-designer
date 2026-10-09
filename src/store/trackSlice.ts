@@ -3,13 +3,14 @@ import type { Config } from '../types/config'
 import type { Track, Gate } from '../types'
 import { GATE_BASE_WIDTH } from '../constants/gateDimensions'
 import { normalizeGates, recreateGateOpenings } from '../utils/gateOpenings'
+import { GATE_DEFINITIONS } from '../utils/gateDefinitions'
 import { buildDefaultGateSequenceEntries, normalizeGateSequence } from '../utils/gateSequence'
 import type { GenerationConfig } from '../utils/generationConfig'
 
 const MAX_HISTORY = 50
 
 function isSingletonGateType(type: Gate['type']): boolean {
-  return type === 'start-finish'
+  return GATE_DEFINITIONS[type].isStartFinish
 }
 
 function hasSingletonGateConflict(gates: Gate[], type: Gate['type'], ignoredGateId?: string): boolean {

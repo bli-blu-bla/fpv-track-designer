@@ -1,22 +1,12 @@
 import { useRef } from 'react'
 import type { Mesh } from 'three'
 import type { ThreeEvent } from '@react-three/fiber'
-import type { GateOpening } from '../../types'
 import { GATE_BASE_HEIGHT, GATE_BASE_WIDTH, GATE_POST_THICKNESS } from '../../constants/gateDimensions'
 import { useTheme } from '../../hooks/useTheme'
 import { getGateColors } from '../../utils/themeColors'
 import { GateOpeningIndicators } from './GateOpeningIndicators'
+import type { GateComponentProps } from './gateComponentProps'
 
-interface GateComponentProps {
-  position: { x: number; y: number; z: number }
-  rotation: number
-  openings: GateOpening[]
-  openingLabels?: Record<string, string>
-  isSelected?: boolean
-  onClick?: (e: ThreeEvent<MouseEvent>) => void
-  onOpeningClick?: (openingId: string, e: ThreeEvent<MouseEvent>) => void
-  onOpeningLabelClick?: (openingId: string, sequenceNumber: number, e: ThreeEvent<MouseEvent>) => void
-}
 
 const POST_THICKNESS = GATE_POST_THICKNESS
 const BASE_WIDTH = GATE_BASE_WIDTH

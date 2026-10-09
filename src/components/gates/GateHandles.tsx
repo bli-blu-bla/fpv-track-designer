@@ -6,6 +6,7 @@ import { ArrowUpDown, Move, Plus, RotateCw, Trash2 } from 'lucide-react'
 import type { GateType } from '../../types'
 import { useAppStore } from '../../store'
 import { calculateFlightPath } from '../../utils/flightPath'
+import { GATE_DEFINITIONS } from '../../utils/gateDefinitions'
 import { Button } from '../ui/button'
 import { useTranslation } from '@/i18n'
 
@@ -30,11 +31,6 @@ interface InsertControlConfig {
 }
 
 const RAYCASTER = new Raycaster()
-const BASE_GATE_HEIGHT = 1.2
-const FLAG_BASE_HEIGHT = 2
-const FLAG_SMALL_BASE_HEIGHT = 1.2
-const POST_THICKNESS = 0.06
-const H_GATE_BACKREST_HEIGHT_MULTIPLIER = 1.85
 const HANDLE_CLEARANCE_ABOVE_GATE = 0.5
 const INSERT_HANDLE_OFFSET_Y = 0.9
 const DEGREES_PER_PIXEL = 1
@@ -93,34 +89,6 @@ function getFallbackInsertPosition(
     y: position.y,
     z: position.z + Math.cos(radians) * FALLBACK_INSERT_DISTANCE * directionMultiplier,
   }, fieldSize)
-}
-
-function getGateTopOffset(gateType: GateType): number {
-  const height = BASE_GATE_HEIGHT
-  const topBarHalfThickness = POST_THICKNESS / 2
-
-  switch (gateType) {
-    case 'h-gate':
-      return height * H_GATE_BACKREST_HEIGHT_MULTIPLIER
-    case 'double-h':
-      return height + height * H_GATE_BACKREST_HEIGHT_MULTIPLIER
-    case 'hurdle':
-      return height + height * 0.9
-    case 'double':
-      return height * 2 + topBarHalfThickness
-    case 'ladder':
-      return height * 3 + topBarHalfThickness
-    case 'start-finish':
-      return height + 0.375
-    case 'flag':
-      return FLAG_BASE_HEIGHT
-    case 'flag-small':
-      return FLAG_SMALL_BASE_HEIGHT
-    case 'octagonal-tunnel':
-    case 'dive':
-    case 'standard':
-      return height + topBarHalfThickness
-  }
 }
 
 export function GateHandles({ gateId, gateType, position, rotation }: GateHandlesProps) {
@@ -190,7 +158,7 @@ export function GateHandles({ gateId, gateType, position, rotation }: GateHandle
   )
   const selectedGateIndex = currentTrack?.gates.findIndex((gate) => gate.id === gateId) ?? -1
   const selectedGate = selectedGateIndex >= 0 ? currentTrack?.gates[selectedGateIndex] : null
-  const moveRotateHandleY = position.y + getGateTopOffset(gateType) + HANDLE_CLEARANCE_ABOVE_GATE
+  const moveRotateHandleY = position.y + GATE_DEFINITIONS[gateType].topHeight + HANDLE_CLEARANCE_ABOVE_GATE
 
   const intersectGround = useCallback((clientX: number, clientY: number) => {
     const rect = glRef.current.domElement.getBoundingClientRect()

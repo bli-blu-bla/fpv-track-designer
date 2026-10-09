@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { calculatePoleBreakdown, POLES_PER_GATE } from './poleCount'
+import { calculatePoleBreakdown } from './poleCount'
+import { GATE_DEFINITIONS } from './gateDefinitions'
+import { GATE_TYPES } from '../types'
 import type { Gate, GateType } from '../types'
 import { createDefaultGateOpenings } from './gateOpenings'
 
@@ -11,9 +13,9 @@ const makeGate = (type: GateType, idSuffix: string | number): Gate => ({
   openings: createDefaultGateOpenings(type),
 })
 
-describe('POLES_PER_GATE', () => {
+describe('gate pole counts', () => {
   it('defines the agreed pole counts for every gate type', () => {
-    expect(POLES_PER_GATE).toEqual({
+    expect(Object.fromEntries(GATE_TYPES.map((type) => [type, GATE_DEFINITIONS[type].poles]))).toEqual({
       'standard': 3,
       'start-finish': 3,
       'h-gate': 4,
@@ -98,7 +100,7 @@ describe('calculatePoleBreakdown', () => {
     expect(tunnel).toMatchObject({ count: 1, polesPerGate: 0, subtotal: 0, notBuildable: true })
   })
 
-  it('orders entries according to gateTypeOptions ordering', () => {
+  it('orders entries according to GATE_TYPES ordering', () => {
     // Insertion order intentionally scrambled
     const result = calculatePoleBreakdown([
       makeGate('flag', 1),

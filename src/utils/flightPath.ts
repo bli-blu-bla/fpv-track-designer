@@ -1,6 +1,7 @@
 import { CubicBezierCurve3, Quaternion, Vector3 } from 'three'
 import type { Gate, GateOpening, GateSequenceItem } from '../types'
-import { getHGateBackrestSide, normalizeGates } from './gateOpenings'
+import { normalizeGates } from './gateOpenings'
+import { GATE_DEFINITIONS, getHGateBackrestSide } from './gateDefinitions'
 import { buildFallbackGateSequence, normalizeGateSequence } from './gateSequence'
 
 export { GATE_BASE_HEIGHT } from '../constants/gateDimensions'
@@ -157,8 +158,8 @@ function getGatePassThroughOffset(opening: GateOpening): number {
   return opening.id === 'entry-top' ? Math.max(defaultOffset, DIVE_TOP_APPROACH_CLEARANCE) : defaultOffset
 }
 
-function isOctagonalTunnelVisit(visit: GateVisit): boolean {
-  return visit.gate.type === 'octagonal-tunnel' && visit.opening.id === 'main'
+function isTunnelVisit(visit: GateVisit): boolean {
+  return GATE_DEFINITIONS[visit.gate.type].tunnelOpeningId === visit.opening.id
 }
 
 function getOctagonalTunnelPortalPoint(visit: GateVisit, localZ: number, outsideDirection: Vector3): Vector3 {
@@ -173,7 +174,7 @@ function getOctagonalTunnelPortalPoint(visit: GateVisit, localZ: number, outside
 }
 
 function getGateEntryPoint(visit: GateVisit): Vector3 {
-  if (isOctagonalTunnelVisit(visit)) {
+  if (isTunnelVisit(visit)) {
     const entryDirection = getGateEntryDirection(visit.gate, visit.opening, visit.reverse)
     const entryLocalZ = visit.reverse ? OCTAGONAL_TUNNEL_HALF_LENGTH_FACTOR : -OCTAGONAL_TUNNEL_HALF_LENGTH_FACTOR
     return getOctagonalTunnelPortalPoint(visit, entryLocalZ, entryDirection)
@@ -185,7 +186,7 @@ function getGateEntryPoint(visit: GateVisit): Vector3 {
 }
 
 function getGateExitPoint(visit: GateVisit): Vector3 {
-  if (isOctagonalTunnelVisit(visit)) {
+  if (isTunnelVisit(visit)) {
     const exitDirection = getGateExitDirection(visit.gate, visit.opening, visit.reverse)
     const exitLocalZ = visit.reverse ? -OCTAGONAL_TUNNEL_HALF_LENGTH_FACTOR : OCTAGONAL_TUNNEL_HALF_LENGTH_FACTOR
     return getOctagonalTunnelPortalPoint(visit, exitLocalZ, exitDirection)
@@ -314,29 +315,10 @@ function createSameGatePhysicalSideClearanceCurve(
   }
 }
 
-function isHGateBackrestTransition(fromVisit: GateVisit, toVisit: GateVisit): boolean {
-  if (fromVisit.gate.id !== toVisit.gate.id || fromVisit.gate.type !== 'h-gate') {
-    return false
-  }
-
-  const openingIds = new Set([fromVisit.opening.id, toVisit.opening.id])
-  return openingIds.has('lower') && openingIds.has('backrest-pass')
-}
-
-function isDoubleHGateStackTransition(fromVisit: GateVisit, toVisit: GateVisit): boolean {
-  if (fromVisit.gate.id !== toVisit.gate.id || fromVisit.gate.type !== 'double-h') {
-    return false
-  }
-
-  const openingOrder = ['lower', 'middle', 'upper']
-  const fromIndex = openingOrder.indexOf(fromVisit.opening.id)
-  const toIndex = openingOrder.indexOf(toVisit.opening.id)
-
-  return fromIndex >= 0 && toIndex >= 0 && Math.abs(fromIndex - toIndex) === 1
-}
-
 function isSideDefinedSameGateTransition(fromVisit: GateVisit, toVisit: GateVisit): boolean {
-  return isHGateBackrestTransition(fromVisit, toVisit) || isDoubleHGateStackTransition(fromVisit, toVisit)
+  if (fromVisit.gate.id !== toVisit.gate.id) return false
+
+  return GATE_DEFINITIONS[fromVisit.gate.type].isSideDefinedTransition?.(fromVisit.opening.id, toVisit.opening.id) ?? false
 }
 
 function createSameGateClearanceCurve(

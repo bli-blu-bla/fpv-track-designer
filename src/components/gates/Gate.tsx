@@ -1,20 +1,10 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef } from 'react'
 import type { ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { Gate as GateType } from '../../types'
 import { useGateSelection } from '../../hooks/useGateSelection'
 import { useAppStore } from '../../store'
-import { StandardGate } from './StandardGate'
-import { HGate } from './HGate'
-import { DoubleHGate } from './DoubleHGate'
-import { HurdleGate } from './HurdleGate'
-import { DiveGate } from './DiveGate'
-import { DoubleGate } from './DoubleGate'
-import { LadderGate } from './LadderGate'
-import { StartFinishGate } from './StartFinishGate'
-import { Flag } from './Flag'
-import { FlagSmall } from './FlagSmall'
-import { OctagonalTunnelGate } from './OctagonalTunnelGate'
+import { GATE_COMPONENTS } from './gateComponents'
 import { GateHandles } from './GateHandles'
 
 interface GateProps {
@@ -83,47 +73,11 @@ export function Gate({ gate, openingLabels, showOpeningLabels = true, readOnly =
     })
   })
 
-  let gateComponent: ReactNode
-  switch (gate.type) {
-    case 'h-gate':
-      gateComponent = <HGate {...commonProps} gateId={gate.id} />
-      break
-    case 'double-h':
-      gateComponent = <DoubleHGate {...commonProps} gateId={gate.id} />
-      break
-    case 'hurdle':
-      gateComponent = <HurdleGate {...commonProps} />
-      break
-    case 'dive':
-      gateComponent = <DiveGate {...commonProps} />
-      break
-    case 'double':
-      gateComponent = <DoubleGate {...commonProps} />
-      break
-    case 'ladder':
-      gateComponent = <LadderGate {...commonProps} />
-      break
-    case 'start-finish':
-      gateComponent = <StartFinishGate {...commonProps} />
-      break
-    case 'flag':
-      gateComponent = <Flag {...commonProps} />
-      break
-    case 'flag-small':
-      gateComponent = <FlagSmall {...commonProps} />
-      break
-    case 'octagonal-tunnel':
-      gateComponent = <OctagonalTunnelGate {...commonProps} />
-      break
-    case 'standard':
-    default:
-      gateComponent = <StandardGate {...commonProps} />
-      break
-  }
+  const GateComponent = GATE_COMPONENTS[gate.type]
 
   return (
     <group ref={shadowGroupRef}>
-      {gateComponent}
+      <GateComponent {...commonProps} gateId={gate.id} />
       {!readOnly && isSelected && (
         <GateHandles
           gateId={gate.id}

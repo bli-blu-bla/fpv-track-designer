@@ -1,5 +1,7 @@
 import type { Gate, GateType, Track, Config } from '../types'
+import { GATE_TYPES } from '../types'
 import { createDefaultGateOpenings } from './gateOpenings'
+import { GATE_DEFINITIONS } from './gateDefinitions'
 import { buildFallbackGateSequence } from './gateSequence'
 
 const MIN_DISTANCE = 3 // meters
@@ -84,11 +86,10 @@ function alignGateRotations(gates: Gate[]): void {
 
 export function generateTrack(config: Config): Track {
   const gates: Gate[] = []
-  const gateTypes = Object.entries(config.gateQuantities)
-    .flatMap(([type, count]) => Array(count).fill(type as GateType))
+  const gateTypes: GateType[] = GATE_TYPES.flatMap((type) => Array<GateType>(config.gateQuantities[type] ?? 0).fill(type))
 
   // Place start-finish gate first at a random position on the field edge
-  const startFinishIndex = gateTypes.indexOf('start-finish')
+  const startFinishIndex = gateTypes.findIndex((type) => GATE_DEFINITIONS[type].isStartFinish)
   if (startFinishIndex >= 0) {
     const [sf] = gateTypes.splice(startFinishIndex, 1)
     const id = crypto.randomUUID()

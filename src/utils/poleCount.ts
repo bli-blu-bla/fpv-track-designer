@@ -1,28 +1,6 @@
 import type { Gate, GateType } from '../types'
-import { gateTypeOptions } from './gateTypeOptions'
-
-/**
- * Anzahl der Stangen, aus denen ein Gate physisch zusammengebaut wird.
- *
- * Die Werte spiegeln den realen Aufbau der Gates auf einem FPV-Rennplatz wider
- * (zwei Pfosten + Querbalken = 3 Stangen für ein Standardgate, etc.).
- *
- * Dive-Gates und Tunnel-Gates lassen sich nicht aus einzelnen Stangen
- * bauen und werden daher mit 0 Stangen geführt.
- */
-export const POLES_PER_GATE: Record<GateType, number> = {
-  'standard': 3,
-  'start-finish': 3,
-  'h-gate': 4,
-  'double-h': 7,
-  'hurdle': 0,
-  'double': 6,
-  'ladder': 9,
-  'flag': 2,
-  'flag-small': 1,
-  'dive': 0,
-  'octagonal-tunnel': 0,
-}
+import { GATE_TYPES } from '../types'
+import { GATE_DEFINITIONS } from './gateDefinitions'
 
 /**
  * Eintrag im Detail-Breakdown des Stangenzählers.
@@ -32,11 +10,9 @@ export const POLES_PER_GATE: Record<GateType, number> = {
  */
 export interface PoleBreakdownEntry {
   type: GateType
-  /** Lokalisiertes Anzeige-Label (siehe `gateTypeOptions`). */
-  label: string
   /** Anzahl Gates dieses Typs auf der Strecke. */
   count: number
-  /** Stangen pro einzelnem Gate dieses Typs (`POLES_PER_GATE`). */
+  /** Stangen pro einzelnem Gate dieses Typs (`GATE_DEFINITIONS[type].poles`). */
   polesPerGate: number
   /** count × polesPerGate. */
   subtotal: number
@@ -47,23 +23,14 @@ export interface PoleBreakdownEntry {
 export interface PoleBreakdown {
   /** Summe aller `subtotal`-Werte – die kompakte Zahl im Badge. */
   total: number
-  /** Detailaufstellung pro Gate-Typ, sortiert wie in `gateTypeOptions`. */
+  /** Detailaufstellung pro Gate-Typ, sortiert wie in `GATE_TYPES`. */
   entries: PoleBreakdownEntry[]
 }
-
-const GATE_TYPE_ORDER: GateType[] = gateTypeOptions.map((option) => option.type)
-const GATE_TYPE_LABELS: Record<GateType, string> = gateTypeOptions.reduce(
-  (acc, option) => {
-    acc[option.type] = option.label
-    return acc
-  },
-  {} as Record<GateType, string>,
-)
 
 /**
  * Berechnet die Stangenkalkulation für eine Liste von Gates.
  *
- * Die Reihenfolge der Einträge folgt `gateTypeOptions`, damit die Anzeige
+ * Die Reihenfolge der Einträge folgt `GATE_TYPES`, damit die Anzeige
  * deterministisch und konsistent zum restlichen UI ist.
  */
 export function calculatePoleBreakdown(gates: Gate[]): PoleBreakdown {
@@ -76,17 +43,16 @@ export function calculatePoleBreakdown(gates: Gate[]): PoleBreakdown {
   const entries: PoleBreakdownEntry[] = []
   let total = 0
 
-  for (const type of GATE_TYPE_ORDER) {
+  for (const type of GATE_TYPES) {
     const count = counts.get(type) ?? 0
     if (count === 0) continue
 
-    const polesPerGate = POLES_PER_GATE[type]
+    const polesPerGate = GATE_DEFINITIONS[type].poles
     const subtotal = count * polesPerGate
     total += subtotal
 
     entries.push({
       type,
-      label: GATE_TYPE_LABELS[type],
       count,
       polesPerGate,
       subtotal,

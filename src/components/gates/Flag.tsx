@@ -1,21 +1,10 @@
 import { useRef } from 'react'
 import type { Mesh } from 'three'
-import type { ThreeEvent } from '@react-three/fiber'
-import type { GateOpening } from '../../types'
 import { useTheme } from '../../hooks/useTheme'
 import { getGateColors, getFlagPoleColor } from '../../utils/themeColors'
 import { GateOpeningIndicators } from './GateOpeningIndicators'
+import type { GateComponentProps } from './gateComponentProps'
 
-interface GateComponentProps {
-  position: { x: number; y: number; z: number }
-  rotation: number
-  openings: GateOpening[]
-  openingLabels?: Record<string, string>
-  isSelected?: boolean
-  onClick?: (e: ThreeEvent<MouseEvent>) => void
-  onOpeningClick?: (openingId: string, e: ThreeEvent<MouseEvent>) => void
-  onOpeningLabelClick?: (openingId: string, sequenceNumber: number, e: ThreeEvent<MouseEvent>) => void
-}
 
 const POLE_THICKNESS = 0.06
 const BASE_HEIGHT = 2

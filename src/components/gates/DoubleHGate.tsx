@@ -1,36 +1,23 @@
 import { useRef } from 'react'
 import type { Mesh } from 'three'
-import type { ThreeEvent } from '@react-three/fiber'
-import type { GateOpening } from '../../types'
-import { GATE_BASE_HEIGHT, GATE_BASE_WIDTH, GATE_POST_THICKNESS } from '../../constants/gateDimensions'
-import { getHGateBackrestSide } from '../../utils/gateOpenings'
+import { GATE_BASE_HEIGHT, GATE_BASE_WIDTH, GATE_POST_THICKNESS, H_GATE_BACKREST_HEIGHT_MULTIPLIER } from '../../constants/gateDimensions'
+import { getHGateBackrestSide } from '../../utils/gateDefinitions'
 import { useTheme } from '../../hooks/useTheme'
 import { getGateColors } from '../../utils/themeColors'
 import { GateOpeningIndicators } from './GateOpeningIndicators'
+import type { GateComponentProps } from './gateComponentProps'
 
-interface GateComponentProps {
-  gateId: string
-  position: { x: number; y: number; z: number }
-  rotation: number
-  openings: GateOpening[]
-  openingLabels?: Record<string, string>
-  isSelected?: boolean
-  onClick?: (e: ThreeEvent<MouseEvent>) => void
-  onOpeningClick?: (openingId: string, e: ThreeEvent<MouseEvent>) => void
-  onOpeningLabelClick?: (openingId: string, sequenceNumber: number, e: ThreeEvent<MouseEvent>) => void
-}
 
 const POST_THICKNESS = GATE_POST_THICKNESS
 const BASE_WIDTH = GATE_BASE_WIDTH
 const BASE_HEIGHT = GATE_BASE_HEIGHT
 const STACK_DISTANCE = BASE_HEIGHT
-const BACKREST_HEIGHT_MULTIPLIER = 1.85
 
 export function DoubleHGate({ gateId, position, rotation, openings, openingLabels, isSelected, onClick, onOpeningClick, onOpeningLabelClick }: GateComponentProps) {
   const groupRef = useRef<Mesh>(null)
   const width = BASE_WIDTH
   const height = BASE_HEIGHT
-  const backrestHeight = height * BACKREST_HEIGHT_MULTIPLIER
+  const backrestHeight = height * H_GATE_BACKREST_HEIGHT_MULTIPLIER
   const backrestSide = getHGateBackrestSide(gateId)
   const backrestX = backrestSide * width / 2
   const theme = useTheme()

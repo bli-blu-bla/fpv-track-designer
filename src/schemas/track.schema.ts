@@ -1,6 +1,7 @@
 import type { Config } from '../types/config'
 import { SNAP_GRID_SIZES } from '../types/config'
 import type { Gate, GateOpening, GateType } from '../types/gate'
+import { GATE_TYPES } from '../types/gate'
 import type { GateSequenceItem, Track } from '../types/track'
 import { normalizeGates } from '../utils/gateOpenings'
 import { normalizeGateSequence } from '../utils/gateSequence'
@@ -50,7 +51,7 @@ const LEGACY_GATE_TYPE_MAP = {
   asymmetric: 'double-h' as const,
 } as const
 
-const VALID_GATE_TYPES: GateType[] = ['standard', 'h-gate', 'double-h', 'hurdle', 'dive', 'double', 'ladder', 'start-finish', 'flag', 'flag-small', 'octagonal-tunnel']
+const VALID_GATE_TYPES: readonly GateType[] = GATE_TYPES
 
 function isValidGateRotation(rotation: unknown): rotation is number {
   return typeof rotation === 'number' && Number.isFinite(rotation) && rotation >= 0 && rotation < 360
