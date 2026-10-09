@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import type { GateType } from '@/types'
+import type { GateType } from '@/core/types'
 
 export type Language = 'de' | 'en'
 
