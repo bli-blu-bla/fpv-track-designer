@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { defaultConfig } from '@/editor/store/configSlice'
+import { defaultConfig } from '@/core/defaultConfig'
 import type { Config, Gate, Track } from '@/core/types'
 import { GATE_TYPES } from '@/core/types'
 import { createDefaultGateOpenings } from '@/core/gates/gateOpenings'

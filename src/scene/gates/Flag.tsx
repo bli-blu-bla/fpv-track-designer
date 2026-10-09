@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import type { Mesh } from 'three'
-import { useTheme } from '@/editor/hooks/useTheme'
+import { useSceneTheme } from '@/scene/SceneTheme'
 import { getGateColors, getFlagPoleColor } from '@/core/theme/themeColors'
 import { GateOpeningIndicators } from './GateOpeningIndicators'
 import type { GateComponentProps } from './gateComponentProps'
@@ -12,7 +12,7 @@ const BASE_HEIGHT = 2
 export function Flag({ position, rotation, openings, openingLabels, isSelected, onClick, onOpeningClick, onOpeningLabelClick }: GateComponentProps) {
   const groupRef = useRef<Mesh>(null)
   const height = BASE_HEIGHT
-  const theme = useTheme()
+  const theme = useSceneTheme()
   const { color, emissiveColor, emissiveIntensity } = getGateColors(theme.colors, 'flag', !!isSelected)
   const poleColor = theme.id === 'night' ? color : getFlagPoleColor()
 

@@ -20,7 +20,7 @@ scene/
 - `Scene` accepts optional `track`, `configOverride`, and `readOnly` for the standalone viewer.
 - Camera controllers return `null` and are imperative via `useThree()`, refs, DOM listeners, and/or `useFrame()`.
 - `FlightPath` creates one native `THREE.Line` per sampled segment to avoid implicit connections between disjoint curves.
-- `Grid` uses drei's `<Grid>` helper and theme colors from `useTheme()`.
+- `Grid` uses drei's `<Grid>` helper and theme colors from `useSceneTheme()`.
 - Theme presets live in `src/types/theme.ts`; material helpers live in `src/utils/themeColors.ts`.
 
 ## WHERE TO LOOK

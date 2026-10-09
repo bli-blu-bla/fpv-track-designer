@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { createEditorStore } from './index'
-import { defaultConfig } from './configSlice'
+import { defaultConfig } from '@/core/defaultConfig'
 import type { Config, Track, Gate } from '@/core/types'
 import { createDefaultGateOpenings } from '@/core/gates/gateOpenings'
 import type { GenerationConfig } from '@/core/track/generationConfig'

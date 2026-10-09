@@ -2,7 +2,7 @@ import { useRef } from 'react'
 import type { Mesh } from 'three'
 import type { ThreeEvent } from '@react-three/fiber'
 import { GATE_BASE_HEIGHT, GATE_BASE_WIDTH, GATE_POST_THICKNESS } from '@/core/constants/gateDimensions'
-import { useTheme } from '@/editor/hooks/useTheme'
+import { useSceneTheme } from '@/scene/SceneTheme'
 import { getGateColors } from '@/core/theme/themeColors'
 import { GateOpeningIndicators } from './GateOpeningIndicators'
 import type { GateComponentProps } from './gateComponentProps'
@@ -37,7 +37,7 @@ export function LadderGate({ position, rotation, openings, openingLabels, isSele
   const groupRef = useRef<Mesh>(null)
   const width = BASE_WIDTH
   const height = BASE_HEIGHT
-  const theme = useTheme()
+  const theme = useSceneTheme()
   const { color, emissiveColor, emissiveIntensity } = getGateColors(theme.colors, 'ladder', !!isSelected)
   const stackOffset = STACK_DISTANCE
 

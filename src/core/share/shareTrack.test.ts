@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { defaultConfig } from '@/editor/store/configSlice'
+import { defaultConfig } from '@/core/defaultConfig'
 import type { Track } from '@/core/types'
 import { createDefaultGateOpenings } from '@/core/gates/gateOpenings'
 import { serializeTrack } from '@/core/schemas/track.schema'

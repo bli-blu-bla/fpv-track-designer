@@ -24,7 +24,7 @@ gates/
 
 ## CONVENTIONS
 - Gate components accept the shared `GateComponentProps` shape: position, rotation degrees, openings, labels, selection, click handlers.
-- Use `meshStandardMaterial` with solid colors from `useTheme()` / `getGateColors()`; no textures.
+- Use `meshStandardMaterial` with solid colors from `useSceneTheme()` / `getGateColors()`; no textures.
 - Selection highlight is emissive color/intensity on visible frame meshes.
 - `Gate.tsx` maps `GateType` to components and owns read-only handling plus opening label/direction callbacks.
 - `GateHandles.tsx` uses drei `<Html>` for DOM overlays in 3D space.

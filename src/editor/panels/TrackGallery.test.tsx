@@ -2,7 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAppStore } from '@/editor/store'
-import { defaultConfig } from '@/editor/store/configSlice'
+import { defaultConfig } from '@/core/defaultConfig'
 import type { Config, Track } from '@/core/types'
 import { createDefaultGateOpenings } from '@/core/gates/gateOpenings'
 import { listTracks, saveTrack } from '@/editor/storage'

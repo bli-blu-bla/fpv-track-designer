@@ -2,7 +2,7 @@ import { fireEvent, render } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useAppStore } from '@/editor/store'
-import { defaultConfig } from '@/editor/store/configSlice'
+import { defaultConfig } from '@/core/defaultConfig'
 
 import { useKeyboardShortcuts } from './useKeyboardShortcuts'
 

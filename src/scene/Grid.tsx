@@ -1,16 +1,8 @@
 import { useMemo } from 'react'
 import type { ThreeEvent } from '@react-three/fiber'
 import { Text } from '@react-three/drei'
-import { useAppStore } from '@/editor/store'
+import { isCameraTouchGesture } from './pointer'
 import type { ThemeColors } from '@/core/types/theme'
-
-function isCameraTouchGesture(e: ThreeEvent<MouseEvent>) {
-  const target = e.nativeEvent.target
-  if (!(target instanceof HTMLElement)) return false
-
-  const canvas = target.closest('canvas')
-  return canvas?.dataset.cameraTouchGesturing === 'true'
-}
 
 interface GridProps {
   fieldSize?: { width: number; height: number }
@@ -18,14 +10,14 @@ interface GridProps {
   showGrid: boolean
   // Used by themes whose field color must bypass scene lighting/tone mapping/fog.
   useUnlitGround?: boolean
+  /** Click on empty ground (editor: clear selection). */
+  onGroundClick?: () => void
 }
 
-export function Grid({ fieldSize = { width: 100, height: 100 }, colors, showGrid, useUnlitGround = false }: GridProps) {
+export function Grid({ fieldSize = { width: 100, height: 100 }, colors, showGrid, useUnlitGround = false, onGroundClick }: GridProps) {
   const halfW = fieldSize.width / 2
   const halfH = fieldSize.height / 2
   const watermarkSize = Math.max(6, Math.min(fieldSize.width / 5.2, fieldSize.height * 0.32))
-  const selectGate = useAppStore((state) => state.selectGate)
-  const isDraggingGate = useAppStore((state) => state.isDraggingGate)
   const gridCellSize = 1
   const sectionSize = 5
   const boundaryThickness = 0.035
@@ -54,8 +46,8 @@ export function Grid({ fieldSize = { width: 100, height: 100 }, colors, showGrid
 
   const handleGroundClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation()
-    if (isDraggingGate || isCameraTouchGesture(e)) return
-    selectGate(null)
+    if (isCameraTouchGesture(e)) return
+    onGroundClick?.()
   }
 
   return (

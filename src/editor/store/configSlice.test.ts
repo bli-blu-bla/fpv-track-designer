@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { create } from 'zustand'
-import { createConfigSlice, defaultConfig, type ConfigSlice } from './configSlice'
+import { defaultConfig } from '@/core/defaultConfig'
+import { createConfigSlice, type ConfigSlice } from './configSlice'
 
 const createTestStore = () =>
   create<ConfigSlice>()((set, get, store) => ({

@@ -1,7 +1,7 @@
 import type { Group } from 'three'
 import { useRef } from 'react'
 import { GATE_BASE_WIDTH, GATE_POST_THICKNESS } from '@/core/constants/gateDimensions'
-import { useTheme } from '@/editor/hooks/useTheme'
+import { useSceneTheme } from '@/scene/SceneTheme'
 import { getGateColors } from '@/core/theme/themeColors'
 import { GateOpeningIndicators } from './GateOpeningIndicators'
 import type { GateComponentProps } from './gateComponentProps'
@@ -18,7 +18,7 @@ export function OctagonalTunnelGate({ position, rotation, openings, openingLabel
   const radius = diameter / 2
   const centerY = radius
   const tunnelLength = 2
-  const theme = useTheme()
+  const theme = useSceneTheme()
   const { color, emissiveColor, emissiveIntensity } = getGateColors(theme.colors, 'octagonal-tunnel', !!isSelected)
   const vertices = Array.from({ length: OCTAGON_SEGMENTS }, (_, index) => {
     const angle = ANGLE_OFFSET + (index * 2 * Math.PI) / OCTAGON_SEGMENTS

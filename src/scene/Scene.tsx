@@ -1,13 +1,13 @@
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, type ComponentType } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Stars, Environment } from '@react-three/drei'
 import { Bloom, EffectComposer } from '@react-three/postprocessing'
 import { ACESFilmicToneMapping, AdditiveBlending, CanvasTexture, MOUSE } from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
-import { useAppStore } from '@/editor/store'
 import { buildDefaultGateSequenceEntries } from '@/core/gates/gateSequence'
 import { getThemeConfig } from '@/core/theme/themeColors'
-import { Gate } from '@/scene/gates/Gate'
+import { Gate, type SceneGateProps } from './gates/Gate'
+import { SceneThemeContext } from './SceneTheme'
 import { FlightPath } from './FlightPath'
 import { Grid } from './Grid'
 import { CameraPan } from './CameraPan'
@@ -19,19 +19,22 @@ import type { Config, Track } from '@/core/types'
 import { calculateFlightPath } from '@/core/track/flightPath'
 
 interface SceneProps {
-  track?: Track | null
-  configOverride?: Config | null
-  readOnly?: boolean
+  track: Track | null
+  config: Config
+  /** Renders each gate; defaults to the read-only `Gate`. The editor passes its interactive wrapper. */
+  gateComponent?: ComponentType<SceneGateProps>
+  /** Click on empty ground. */
+  onGroundClick?: () => void
   fpvModeActive?: boolean
   onFpvComplete?: () => void
 }
 
-export function Scene({ track, configOverride, readOnly = false, fpvModeActive = false, onFpvComplete }: SceneProps = {}) {
+/**
+ * The single R3F Canvas for editor and viewer. Renders whatever track/config it
+ * is given and never reads an app store, so it stays usable read-only.
+ */
+export function Scene({ track: currentTrack, config, gateComponent: GateView = Gate, onGroundClick, fpvModeActive = false, onFpvComplete }: SceneProps) {
   const controlsRef = useRef<OrbitControlsImpl>(null)
-  const storeTrack = useAppStore((state) => state.currentTrack)
-  const storeConfig = useAppStore((state) => state.config)
-  const currentTrack = track !== undefined ? track : storeTrack
-  const config = configOverride ?? storeConfig
   const theme = useMemo(() => getThemeConfig(config.theme), [config.theme])
   const usesMinimalScene = theme.useSkyDome
   const flightPath = useMemo(() => {
@@ -118,12 +121,11 @@ export function Scene({ track, configOverride, readOnly = false, fpvModeActive =
   const trackContent = currentTrack ? (
     <>
       {currentTrack.gates.map((gate) => (
-        <Gate
+        <GateView
           key={gate.id}
           gate={gate}
           openingLabels={config.showOpeningLabels ? gateLabels.get(gate.id) : undefined}
           showOpeningLabels={config.showOpeningLabels}
-          readOnly={readOnly}
         />
       ))}
       {config.showFlightPath && <FlightPath gates={currentTrack.gates} gateSequence={currentTrack.gateSequence} />}
@@ -169,6 +171,7 @@ export function Scene({ track, configOverride, readOnly = false, fpvModeActive =
       camera={{ position: [0, 30, 30], fov: 50, near: 0.1, far: 1000 }}
       style={{ width: '100%', height: '100%', touchAction: 'none' }}
     >
+      <SceneThemeContext.Provider value={theme}>
       {/* ── MINIMAL THEMES ──────────────────────────────────────────────────── */}
       {usesMinimalScene && (
         <>
@@ -192,7 +195,7 @@ export function Scene({ track, configOverride, readOnly = false, fpvModeActive =
             color={theme.colors.fillColor}
           />
           <ambientLight intensity={theme.colors.ambientIntensity} color={theme.colors.ambientColor} />
-          <Grid fieldSize={config.fieldSize} colors={theme.colors} showGrid={config.showGrid} />
+          <Grid fieldSize={config.fieldSize} colors={theme.colors} showGrid={config.showGrid} onGroundClick={onGroundClick} />
           {trackContent}
           {cameraControls}
         </>
@@ -244,7 +247,7 @@ export function Scene({ track, configOverride, readOnly = false, fpvModeActive =
             color={theme.colors.fillColor}
           />
           <ambientLight intensity={theme.colors.ambientIntensity} color={theme.colors.ambientColor} />
-          <Grid fieldSize={config.fieldSize} colors={theme.colors} showGrid={config.showGrid} />
+          <Grid fieldSize={config.fieldSize} colors={theme.colors} showGrid={config.showGrid} onGroundClick={onGroundClick} />
           {trackContent}
           {cameraControls}
         </>
@@ -270,7 +273,7 @@ export function Scene({ track, configOverride, readOnly = false, fpvModeActive =
           />
           <ambientLight intensity={theme.colors.ambientIntensity} color={theme.colors.ambientColor} />
           {/* Night field colors use the unlit Grid path so ThemeColors.groundGrass is visible as authored. */}
-          <Grid fieldSize={config.fieldSize} colors={theme.colors} showGrid={config.showGrid} useUnlitGround />
+          <Grid fieldSize={config.fieldSize} colors={theme.colors} showGrid={config.showGrid} useUnlitGround onGroundClick={onGroundClick} />
           {currentTrack && (
             <EffectComposer>
               <Bloom mipmapBlur intensity={1.6} luminanceThreshold={1} luminanceSmoothing={0.2} />
@@ -280,6 +283,7 @@ export function Scene({ track, configOverride, readOnly = false, fpvModeActive =
           {cameraControls}
         </>
       )}
+      </SceneThemeContext.Provider>
     </Canvas>
   )
 }

@@ -5,7 +5,7 @@ import { extractGenerationConfig } from '@/core/track/generationConfig'
 import { createDefaultGateOpenings } from '@/core/gates/gateOpenings'
 import { GATE_DEFINITIONS } from '@/core/gates/gateDefinitions'
 import { GateIcon } from '@/editor/icons/GateIcon'
-import { defaultConfig } from '@/editor/store/configSlice'
+import { defaultConfig } from '@/core/defaultConfig'
 import { useKeyboardShortcuts } from '@/editor/hooks/useKeyboardShortcuts'
 import type { GateType } from '@/core/types'
 import { GATE_TYPES } from '@/core/types'
@@ -37,6 +37,7 @@ import { GateConfigPanel } from '@/editor/panels/GateConfigPanel'
 import { ThemeConfigPanel } from '@/editor/panels/ThemeConfigPanel'
 import { ApplyConfigFooter } from '@/editor/panels/ApplyConfigFooter'
 import { Scene } from '@/scene/Scene'
+import { EditableGate } from './gates/EditableGate'
 import { TopBar } from '@/editor/layout/TopBar'
 import { LeftToolPanel } from '@/editor/layout/LeftToolPanel'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -57,6 +58,12 @@ function setFirstVisitCookie() {
   if (typeof document === 'undefined') return
 
   document.cookie = `${FIRST_VISIT_COOKIE}=true; max-age=${FIRST_VISIT_COOKIE_MAX_AGE}; path=/; SameSite=Lax`
+}
+
+// A click that ends a gate drag also lands on the ground; it must not clear the selection.
+function clearSelectionOnGroundClick() {
+  const { isDraggingGate, selectGate } = useAppStore.getState()
+  if (!isDraggingGate) selectGate(null)
 }
 
 function App() {
@@ -231,7 +238,14 @@ function App() {
             }}
           />
           <main className="relative min-w-0 flex-1 touch-none pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0">
-            <Scene fpvModeActive={fpvModeActive} onFpvComplete={() => setFpvModeActive(false)} />
+            <Scene
+              track={currentTrack}
+              config={config}
+              gateComponent={EditableGate}
+              onGroundClick={clearSelectionOnGroundClick}
+              fpvModeActive={fpvModeActive}
+              onFpvComplete={() => setFpvModeActive(false)}
+            />
           </main>
         </div>
       </div>

@@ -2,7 +2,7 @@ import { useRef } from 'react'
 import type { Mesh } from 'three'
 import { GATE_BASE_HEIGHT, GATE_BASE_WIDTH, GATE_POST_THICKNESS, H_GATE_BACKREST_HEIGHT_MULTIPLIER } from '@/core/constants/gateDimensions'
 import { getHGateBackrestSide } from '@/core/gates/gateDefinitions'
-import { useTheme } from '@/editor/hooks/useTheme'
+import { useSceneTheme } from '@/scene/SceneTheme'
 import { getGateColors } from '@/core/theme/themeColors'
 import { GateOpeningIndicators } from './GateOpeningIndicators'
 import type { GateComponentProps } from './gateComponentProps'
@@ -20,7 +20,7 @@ export function DoubleHGate({ gateId, position, rotation, openings, openingLabel
   const backrestHeight = height * H_GATE_BACKREST_HEIGHT_MULTIPLIER
   const backrestSide = getHGateBackrestSide(gateId)
   const backrestX = backrestSide * width / 2
-  const theme = useTheme()
+  const theme = useSceneTheme()
   const { color, emissiveColor, emissiveIntensity } = getGateColors(theme.colors, 'double-h', !!isSelected)
   const stackOffset = STACK_DISTANCE
 

@@ -2,7 +2,7 @@ import { Text } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import type { ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
-import { useTheme } from '@/editor/hooks/useTheme'
+import { useSceneTheme } from '@/scene/SceneTheme'
 import { useRef, useState } from 'react'
 
 interface GateEntryIndicatorProps {
@@ -38,7 +38,7 @@ export function GateEntryIndicator({ width, height, position = [0, height / 2, 0
   const lineCount = Math.max(lines.length, 1)
   const widestLineLength = Math.max(...lines.map((line) => line.length), 1)
   const fontSize = Math.min((width * 0.58) / widestLineLength, (height * 0.56) / lineCount)
-  const theme = useTheme()
+  const theme = useSceneTheme()
   const entryLabelColor = theme.colors.indicatorEntryLabel
   const exitLabelColor = theme.colors.indicatorExitLabel
   const entryOutlineColor = theme.colors.indicatorEntryOutline

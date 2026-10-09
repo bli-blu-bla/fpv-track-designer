@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import type { Mesh } from 'three'
 import { GATE_BASE_WIDTH, GATE_POST_THICKNESS } from '@/core/constants/gateDimensions'
-import { useTheme } from '@/editor/hooks/useTheme'
+import { useSceneTheme } from '@/scene/SceneTheme'
 import { getGateColors } from '@/core/theme/themeColors'
 import { GateOpeningIndicators } from './GateOpeningIndicators'
 import type { GateComponentProps } from './gateComponentProps'
@@ -14,7 +14,7 @@ export function DiveGate({ position, rotation, openings, openingLabels, isSelect
   const groupRef = useRef<Mesh>(null)
   const s = BASE_SIZE
   const half = s / 2
-  const theme = useTheme()
+  const theme = useSceneTheme()
   const { color, emissiveColor, emissiveIntensity } = getGateColors(theme.colors, 'dive', !!isSelected)
 
   return (

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { defaultConfig } from '@/editor/store/configSlice'
+import { defaultConfig } from '@/core/defaultConfig'
 import type { Track } from '@/core/types'
 import { createDefaultGateOpenings } from '@/core/gates/gateOpenings'
 import { useViewerStore } from './store'

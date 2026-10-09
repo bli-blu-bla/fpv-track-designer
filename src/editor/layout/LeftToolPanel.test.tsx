@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAppStore } from '@/editor/store'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { defaultConfig } from '@/editor/store/configSlice'
+import { defaultConfig } from '@/core/defaultConfig'
 import * as generator from '@/core/track/generator'
 import type { Track } from '@/core/types'
 import { createDefaultGateOpenings } from '@/core/gates/gateOpenings'

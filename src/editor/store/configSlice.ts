@@ -1,5 +1,6 @@
 import type { StateCreator } from 'zustand'
 import type { Config, GateType, SnapGridSize, ThemeId } from '@/core/types'
+import { defaultConfig } from '@/core/defaultConfig'
 
 export interface ConfigSlice {
   config: Config
@@ -15,28 +16,7 @@ export interface ConfigSlice {
   resetToDefault: () => void
 }
 
-export const defaultConfig: Config = {
-  gateQuantities: {
-    'standard': 3,
-    'start-finish': 1,
-    'h-gate': 2,
-    'double-h': 0,
-    'hurdle': 0,
-    'dive': 1,
-    'double': 1,
-    'ladder': 0,
-    'flag': 1,
-    'flag-small': 1,
-    'octagonal-tunnel': 1,
-  },
-  fieldSize: { width: 30, height: 15 },
-  snapGatesToGrid: false,
-  snapGridSize: 0.3,
-  showGrid: false,
-  showFlightPath: true,
-  showOpeningLabels: true,
-  theme: 'minimal' as const,
-};
+
 
 export const createConfigSlice: StateCreator<ConfigSlice, [], [], ConfigSlice> = (set) => ({
   config: defaultConfig,

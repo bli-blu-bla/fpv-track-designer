@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defaultConfig } from '@/editor/store/configSlice'
+import { defaultConfig } from '@/core/defaultConfig'
 import type { Track } from '@/core/types'
 import { createDefaultGateOpenings } from '@/core/gates/gateOpenings'
 import { useViewerStore } from './store'
@@ -12,17 +12,19 @@ const anchorClick = vi.fn<() => void>()
 
 vi.mock('@/scene/Scene', () => ({
   Scene: ({
-    readOnly,
+    gateComponent,
+    onGroundClick,
     fpvModeActive,
     onFpvComplete,
   }: {
-    readOnly?: boolean
+    gateComponent?: unknown
+    onGroundClick?: () => void
     fpvModeActive?: boolean
     onFpvComplete?: () => void
   }) => (
     <div
       data-testid="viewer-scene"
-      data-readonly={String(readOnly)}
+      data-readonly={String(gateComponent === undefined && onGroundClick === undefined)}
       data-fpv-active={String(fpvModeActive)}
     >
       <button type="button" onClick={onFpvComplete}>Complete FPV</button>

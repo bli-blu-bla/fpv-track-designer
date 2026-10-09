@@ -95,8 +95,7 @@ export function ViewerApp() {
     <main className="relative h-dvh w-dvw overflow-hidden bg-slate-950">
       <Scene
         track={track}
-        configOverride={config}
-        readOnly
+        config={config}
         fpvModeActive={fpvModeActive}
         onFpvComplete={() => setFpvModeActive(false)}
       />
