@@ -1,13 +1,14 @@
-import { useMemo, useRef, type ComponentType } from 'react'
+import { lazy, Suspense, useMemo, useRef, type ComponentType } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Stars, Environment } from '@react-three/drei'
-import { Bloom, EffectComposer } from '@react-three/postprocessing'
 import { ACESFilmicToneMapping, AdditiveBlending, CanvasTexture, MOUSE } from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { buildDefaultGateSequenceEntries } from '@/core/gates/gateSequence'
 import { getThemeConfig } from '@/core/theme/themeColors'
 import { Gate, type SceneGateProps } from './gates/Gate'
 import { SceneThemeContext } from './SceneTheme'
+
+const NightBloom = lazy(() => import('./NightBloom').then((module) => ({ default: module.NightBloom })))
 import { FlightPath } from './FlightPath'
 import { Grid } from './Grid'
 import { CameraPan } from './CameraPan'
@@ -275,9 +276,9 @@ export function Scene({ track: currentTrack, config, gateComponent: GateView = G
           {/* Night field colors use the unlit Grid path so ThemeColors.groundGrass is visible as authored. */}
           <Grid fieldSize={config.fieldSize} colors={theme.colors} showGrid={config.showGrid} useUnlitGround onGroundClick={onGroundClick} />
           {currentTrack && (
-            <EffectComposer>
-              <Bloom mipmapBlur intensity={1.6} luminanceThreshold={1} luminanceSmoothing={0.2} />
-            </EffectComposer>
+            <Suspense fallback={null}>
+              <NightBloom />
+            </Suspense>
           )}
           {trackContent}
           {cameraControls}
