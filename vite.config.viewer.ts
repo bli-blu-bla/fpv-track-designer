@@ -1,31 +1,53 @@
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
-import { viteSingleFile } from 'vite-plugin-singlefile'
 import { fileURLToPath, URL } from 'node:url'
-import { existsSync, renameSync, rmSync } from 'node:fs'
-import { join } from 'node:path'
 
-function renameViewerHtmlToIndex(): Plugin {
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+// Inlines the emitted JS/CSS into the viewer HTML and emits it as index.html,
+// so the share viewer ships as one static file.
+function inlineViewerBundle(): Plugin {
   return {
-    name: 'rename-viewer-html-to-index',
-    writeBundle(options) {
-      if (!options.dir) return
+    name: 'inline-viewer-bundle',
+    enforce: 'post',
+    generateBundle(_options, bundle) {
+      const htmlAsset = bundle['viewer.html']
+      if (!htmlAsset || htmlAsset.type !== 'asset') return
 
-      const viewerPath = join(options.dir, 'viewer.html')
-      const indexPath = join(options.dir, 'index.html')
-      if (!existsSync(viewerPath)) return
+      let html = String(htmlAsset.source)
 
-      if (existsSync(indexPath)) {
-        rmSync(indexPath)
+      for (const [fileName, output] of Object.entries(bundle)) {
+        const name = escapeRegExp(fileName)
+
+        if (output.type === 'chunk' && fileName.endsWith('.js')) {
+          const code = output.code.replace(/<(\/script>|!--)/g, '\\x3C$1').trim()
+          html = html.replace(
+            new RegExp(`<script([^>]*?) src="(?:[^"]*?/)?${name}"([^>]*)></script>`),
+            (_match, before: string, after: string) => `<script${before}${after}>${code}</script>`,
+          )
+          delete bundle[fileName]
+        } else if (output.type === 'asset' && fileName.endsWith('.css')) {
+          const css = String(output.source).replace('@charset "UTF-8";', '').trim()
+          html = html.replace(
+            new RegExp(`<link([^>]*?) href="(?:[^"]*?/)?${name}"([^>]*)>`),
+            (_match, before: string, after: string) => `<style${before}${after}>${css}</style>`,
+          )
+          delete bundle[fileName]
+        }
       }
-      renameSync(viewerPath, indexPath)
+
+      delete bundle['viewer.html']
+      this.emitFile({ type: 'asset', fileName: 'index.html', source: html })
     },
   }
 }
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), viteSingleFile(), renameViewerHtmlToIndex()],
+  base: './',
+  plugins: [react(), tailwindcss(), inlineViewerBundle()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
@@ -33,8 +55,15 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist-viewer',
+    assetsDir: '',
+    assetsInlineLimit: () => true,
+    chunkSizeWarningLimit: 100_000_000,
+    cssCodeSplit: false,
     rollupOptions: {
       input: fileURLToPath(new URL('./viewer.html', import.meta.url)),
+      output: {
+        codeSplitting: false,
+      },
     },
   },
 })
