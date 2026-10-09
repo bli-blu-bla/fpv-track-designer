@@ -27,7 +27,7 @@ layout/
 - Layout components may read editor state with `useAppStore`; they are app shell, not shadcn primitives.
 - Keep destructive actions (`shuffle`, JSON import, gallery loads) behind `requestDestructiveAction()` so dirty tracks prompt first.
 - Import/export/share must route through schema/share utilities; never build payloads manually in layout.
-- `LeftToolPanel` shows the long share URL immediately, then replaces it with the shortened URL if the endpoint succeeds.
+- `LeftToolPanel` share dialog shows both the long URL and the short URL; copy uses the short URL when available, else the long one.
 - Text comes from `useTranslation()` except stable product labels like `FPV-Track-Designer` and `Beta Version`.
 - Keep mobile bottom-rail and desktop side-rail classes together in `LeftToolPanel`; avoid separate duplicated components.
 

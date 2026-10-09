@@ -1,9 +1,0 @@
-
- RUN  v4.1.4 /Users/jakoblehner/coding/fpv-track-designer
-
-
- Test Files  1 passed (1)
-      Tests  17 passed (17)
-   Start at  13:09:12
-   Duration  495ms (transform 20ms, setup 0ms, import 30ms, tests 3ms, environment 334ms)
-

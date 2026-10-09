@@ -15,12 +15,11 @@ gates/
 ├── StartFinishGate.tsx       # Start panel + text
 ├── Flag.tsx                  # Pole + flag marker
 ├── FlagSmall.tsx             # 1m pole + proportionally smaller plate
-├── OctagonalTunnelGate.tsx   # Octagonal tunnel / legacy asymmetric replacement
+├── OctagonalTunnelGate.tsx   # Octagonal tunnel (legacy `asymmetric` maps to `double-h`)
 ├── Gate.tsx                  # Dispatcher: GateType → component
 ├── GateHandles.tsx           # Html overlay: move/rotate/elevate/insert/delete
 ├── GateOpeningIndicators.tsx # Maps openings to entry/exit indicators
-├── GateEntryIndicator.tsx    # Per-opening planes, labels, swap icon
-└── index.ts                  # Incomplete barrel; no importers (missing LadderGate, FlagSmall)
+└── GateEntryIndicator.tsx    # Per-opening planes, labels, swap icon
 ```
 
 ## CONVENTIONS
@@ -45,10 +44,10 @@ gates/
 - Do not add user-defined/custom gate types.
 - Do not add per-gate sizing; dimensions are shared constants/global behavior.
 - Do not bypass `Gate.tsx` when adding a fixed gate type.
-- Do not trust the barrel; it lacks `LadderGate`/`FlagSmall` and has no importers — import gate files directly.
+- There is no barrel file; import gate files directly.
 
 ## NOTES
-- `Scene.tsx` imports `Gate` directly (`../gates/Gate`) and bypasses the barrel.
+- `Scene.tsx` imports `Gate` directly (`../gates/Gate`).
 - `GateHandles.tsx` is the largest component; it coordinates drag refs, OrbitControls disabling, insert positions, and history commits.
 - Insert handles prefer flight-path samples when available and fall back to rotated gate offsets.
 - `GateType` set (`src/types/gate.ts`): standard, h-gate, double-h, hurdle, dive, double, ladder, start-finish, flag, flag-small, octagonal-tunnel.

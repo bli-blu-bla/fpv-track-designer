@@ -85,11 +85,11 @@ fpv-track-designer/
 - `@/*` aliases cross-domain imports; nearby gate/scene/store/type files often use relative imports.
 - Tests are co-located as `*.test.ts` or `*.test.tsx`; no shared Vitest setup file.
 - Vitest config lives in `vite.config.ts` with `globals: true` and `environment: 'jsdom'`.
-- Tailwind v4 is CSS-first via `@tailwindcss/vite`, `@import "tailwindcss"`, `tw-animate-css`, and `shadcn/tailwind.css`; no `tailwind.config.js`.
+- Tailwind v4 is CSS-first via `@tailwindcss/vite`, `@import "tailwindcss"`, `tw-animate-css`, and the vendored `src/styles/shadcn-tailwind.css` (copied from shadcn@4.21.4); no `tailwind.config.js`.
 - Zustand editor state uses slice files merged in `src/store/index.ts`; viewer state is a separate tiny store in `src/viewer-store.ts`.
 - UI components use shadcn/Radix primitives plus `cn` from `src/lib/utils.ts`.
-- Viewer build uses `vite.config.viewer.ts`, `vite-plugin-singlefile`, `viewer.html`, and renames output to `dist-viewer/index.html`.
-- `vite-plugin-singlefile` is single-entry only; keep editor and viewer builds as separate commands/outputs.
+- Viewer build uses `vite.config.viewer.ts` with the local `inlineViewerBundle()` plugin: inlines JS/CSS from `viewer.html` and emits `dist-viewer/index.html`.
+- The inline plugin is single-entry only; keep editor and viewer builds as separate commands/outputs.
 - Do not run Playwright/browser QA unless explicitly requested; the user handles visual QA by default.
 
 ## ANTI-PATTERNS (THIS PROJECT)
@@ -101,10 +101,9 @@ fpv-track-designer/
 - Do not duplicate schema validation in storage/import/share flows; route through `src/schemas`.
 - Do not bypass the unsaved-changes flow for destructive editor actions.
 - Do not expose editor mutation actions in the read-only viewer store/UI.
-- Do not assume `src/components/gates/index.ts` is authoritative; it is incomplete (missing `LadderGate`, `FlagSmall`) and bypassed by `Scene.tsx`/`Gate.tsx`.
 
 ## UNIQUE STYLES
-- Gate rotation: 0-330 in 30 degree steps.
+- Gate rotation: UI handles snap in 15 degree steps (`ROTATION_SNAP_STEP_DEGREES`); generator rounds to 30 degrees.
 - Gate movement: N/S/E/W, 1m increments; optional snap-grid uses smaller subdivisions during drag.
 - Undo/redo: `past`/`future` arrays, `MAX_HISTORY=50`, dirty flag captured in history entries.
 - Flight path: gate-sequence visits, Bezier sampling, disjoint native `THREE.Line` segments, arrows along path.
@@ -129,10 +128,10 @@ npm run preview        # preview production editor build only
 - No in-repo GitHub Actions workflows were found.
 - Docker deploys editor and viewer separately; editor nginx proxies `/api/shorten-track`, viewer is static-only.
 - Chunk size warning from R3F/Drei bundle is acceptable for MVP.
-- `src/assets/hero.png`, `react.svg`, `vite.svg` are template/unused leftovers.
-- `src/components/gates/index.ts` barrel is incomplete (missing `LadderGate`, `FlagSmall`) and has no importers; `Scene.tsx` and `Gate.tsx` import gate files directly.
-- `utils/gateOperations.ts` is dead in production (only its own test imports it); `trackSlice.ts` reimplements `moveGate`/`rotateGate` inline.
-- Test libraries live in `dependencies`; they would normally be `devDependencies`.
+- There is no gate barrel; `Scene.tsx` and `Gate.tsx` import gate files directly.
+- Move/rotate logic lives inline in `trackSlice.ts`.
+- Runtime libs are `dependencies`; build/test tooling (Vitest, Testing Library) is `devDependencies`. The shadcn CLI is not installed; add components with `npx shadcn@latest add <name>`. `three` is declared explicitly.
+- `shadcn` and `vite-plugin-singlefile` were removed on purpose: both pulled in the unpatched `braces`/`micromatch` advisory. Do not re-add them; `npm audit` should stay at 0.
 - Root has generated QA/build artifacts at times (`qa-*.png`, `dist/`, `dist-viewer/`); keep generated artifacts out of commits unless intentionally requested.
 - Avoid creating visual QA screenshots unless explicitly requested.
 - `docs/coolify-track-sharing.md` documents the two-service Coolify deploy and the n8n short-link proxy.

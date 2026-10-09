@@ -310,4 +310,4 @@ Während eines **FPV-Flugs** sind die Kamera-Bedienelemente deaktiviert, bis du 
 
 ---
 
-*Diese Dokumentation beschreibt den Stand von `main`. Die interne Projekt-/Entwicklerdokumentation findest du in den `AGENTS.md`-Dateien sowie in [`dokumentations-audit.md`](./dokumentations-audit.md).*
+*Diese Dokumentation beschreibt den Stand von `main`. Die interne Projekt-/Entwicklerdokumentation findest du in den `AGENTS.md`-Dateien und im [`README.md`](../README.md).*

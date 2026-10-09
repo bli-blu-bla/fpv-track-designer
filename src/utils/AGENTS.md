@@ -7,7 +7,6 @@
 utils/
 ├── generator.ts          # Random track generation with collision detection
 ├── flightPath.ts         # Path segments, avoidance curves, samples, arrows
-├── gateOperations.ts     # Pure move/rotate helpers (dead: only its own test imports it)
 ├── gateOpenings.ts       # Opening geometry, normalizeGates, H-gate backrest side
 ├── gateSequence.ts       # Sequence ordering, legacy expansion, normalization
 ├── storage.ts            # localStorage CRUD for saved tracks
@@ -32,7 +31,7 @@ utils/
 |------|------|---------------|
 | Change generation algorithm | `generator.ts` | `generateTrack(config)` |
 | Modify flight path | `flightPath.ts` | `calculateFlightPath(gates, sequence)` |
-| Change gate movement | `gateOperations.ts` | `moveGate()`, `rotateGate()` |
+| Change gate movement | `src/store/trackSlice.ts` | `moveGate()`, `rotateGate()` actions |
 | Modify gate openings | `gateOpenings.ts` | `createDefaultGateOpenings()`, `normalizeGates()` |
 | Modify gate sequence | `gateSequence.ts` | `buildDefaultGateSequenceEntries()`, `normalizeGateSequence()` |
 | Modify persistence | `storage.ts` | `saveTrack()`, `loadTrack()`, `listTracks()`, `deleteTrack()` |

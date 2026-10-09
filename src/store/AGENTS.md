@@ -51,7 +51,6 @@ Destructive actions (Shuffle, Import JSON, Gallery Load/Duplicate, Apply Config)
 The global save dialog is store-driven via `isSaveDialogOpen`, `openSaveDialog()`, and `dismissSaveDialog()`.
 
 ## NOTES
-- `trackSlice.ts` duplicates `moveGate`/`rotateGate` logic from `utils/gateOperations.ts`.
 - `commitGateDrag()` pushes the drag-start snapshot once, avoiding undo stack pollution during pointer moves.
 - Viewer state intentionally does not expose editor mutation actions.
 
