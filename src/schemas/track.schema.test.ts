@@ -297,4 +297,82 @@ describe('track schema', () => {
       message: 'Snap grid size must be one of: 0.3, 0.5, 1',
     })
   })
+
+  it('stores only user state: no opening geometry and no default gate sequence', () => {
+    const exported = JSON.parse(serializeTrack(track, config))
+
+    expect(exported.version).toBe('2.0.0')
+    expect(exported.track.gates[0]).not.toHaveProperty('openings')
+    expect(exported.track).not.toHaveProperty('gateSequence')
+  })
+
+  it('round-trips reversed openings and a custom gate sequence', () => {
+    const doubleGate: Track['gates'][number] = {
+      id: 'gate-2',
+      type: 'double',
+      position: { x: 3, y: 0, z: 1 },
+      rotation: 30,
+      openings: createDefaultGateOpenings('double', 'gate-2').map((opening) => (
+        opening.id === 'upper' ? { ...opening, reverse: true } : opening
+      )),
+    }
+    const customTrack: Track = {
+      ...track,
+      gates: [track.gates[0], doubleGate],
+      gateSequence: [
+        { gateId: 'gate-2', openingId: 'upper', reverse: true },
+        { gateId: 'gate-1', openingId: 'main', reverse: false },
+        { gateId: 'gate-2', openingId: 'lower', reverse: false },
+      ],
+    }
+
+    const exported = JSON.parse(serializeTrack(customTrack, config))
+    expect(exported.track.gates[1].openings).toEqual([{ id: 'upper', reverse: true }])
+
+    const result = deserializeTrack(JSON.stringify(exported))
+    expect('error' in result).toBe(false)
+    if ('error' in result) return
+
+    expect(result.track.gates[1].openings).toEqual(doubleGate.openings)
+    expect(result.track.gateSequence).toEqual(customTrack.gateSequence)
+  })
+
+  it('loads 1.x exports with full opening geometry and keeps their direction flags', () => {
+    const legacyJson = JSON.stringify({
+      version: '1.2.0',
+      track: {
+        ...track,
+        gates: [{
+          ...track.gates[0],
+          openings: [{ id: 'main', position: { x: 0, y: 9, z: 0 }, width: 5, height: 5, rotation: 0, reverse: true }],
+        }],
+        gateSequence: [{ gateId: 'gate-1', openingId: 'main', reverse: true }],
+      },
+      config,
+    })
+
+    const result = deserializeTrack(legacyJson)
+    expect('error' in result).toBe(false)
+    if ('error' in result) return
+
+    expect(result.track.gates[0].openings).toEqual([
+      { ...createDefaultGateOpenings('standard', 'gate-1')[0], reverse: true },
+    ])
+  })
+
+  it('rejects sequence entries that reference unknown gates', () => {
+    const result = deserializeTrack(JSON.stringify({
+      version: '2.0.0',
+      track: { ...track, gateSequence: [{ gateId: 'missing', openingId: 'main' }] },
+      config,
+    }))
+
+    expect('error' in result).toBe(true)
+    if (!('error' in result)) return
+
+    expect(result.errors).toContainEqual({
+      field: 'track.gateSequence[0].gateId',
+      message: "gateId 'missing' does not match any gate id",
+    })
+  })
 })

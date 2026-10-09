@@ -1,20 +1,8 @@
 import type { Track, Config } from '../types'
 import { serializeTrack, deserializeTrack } from '../schemas/track.schema'
-import { normalizeGates } from './gateOpenings'
-import { normalizeGateSequence } from './gateSequence'
 
 const STORAGE_KEY_PREFIX = 'fpv-track-'
 const TRACK_LIST_KEY = 'fpv-track-list'
-
-function normalizeTrackData(track: Track): Track {
-  const gates = normalizeGates(track.gates)
-
-  return {
-    ...track,
-    gates,
-    gateSequence: normalizeGateSequence(track.gateSequence, gates),
-  }
-}
 
 export interface SavedTrackInfo {
   id: string
@@ -24,13 +12,11 @@ export interface SavedTrackInfo {
 
 export function saveTrack(track: Track, config: Config): void {
   try {
-    const normalizedTrack = normalizeTrackData(track)
-    const json = serializeTrack(normalizedTrack, config)
-    localStorage.setItem(STORAGE_KEY_PREFIX + normalizedTrack.id, json)
+    localStorage.setItem(STORAGE_KEY_PREFIX + track.id, serializeTrack(track, config))
 
     const list = listTracks()
-    const existing = list.findIndex(t => t.id === normalizedTrack.id)
-    const info: SavedTrackInfo = { id: normalizedTrack.id, name: normalizedTrack.name, updatedAt: normalizedTrack.updatedAt }
+    const existing = list.findIndex(t => t.id === track.id)
+    const info: SavedTrackInfo = { id: track.id, name: track.name, updatedAt: track.updatedAt }
     if (existing >= 0) {
       list[existing] = info
     } else {
@@ -50,11 +36,7 @@ export function loadTrack(id: string): { track: Track; config: Config } | null {
   if (!json) return null
 
   const result = deserializeTrack(json)
-  if ('error' in result) return null
-  return {
-    ...result,
-    track: normalizeTrackData(result.track),
-  }
+  return 'error' in result ? null : result
 }
 
 export function listTracks(): SavedTrackInfo[] {

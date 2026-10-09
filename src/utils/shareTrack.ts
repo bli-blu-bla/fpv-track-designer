@@ -1,8 +1,12 @@
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string'
 import type { Config, Track } from '@/types'
-import { serializeTrack, deserializeTrack } from '@/schemas/track.schema'
+import { deserializeTrack } from '@/schemas/track.schema'
+import { decodeCompactTrack, encodeCompactTrack } from '@/schemas/compactTrack.schema'
 
 const DEFAULT_VIEWER_DOMAIN = 'https://sharedtrack.fpvooe.com'
+/** Current links: lz-string compressed compact track (`schemas/compactTrack.schema.ts`). */
+const COMPACT_PAYLOAD_PREFIX = 'c.'
+/** Older links: lz-string compressed full export JSON. */
 const COMPRESSED_PAYLOAD_PREFIX = 'z.'
 const DEFAULT_SHORTENER_ENDPOINT = 'https://n8n.fanaticagentic.com/webhook/shorten-track'
 const DEV_SHORTENER_ENDPOINT = '/api/shorten-track'
@@ -45,16 +49,23 @@ function decodeBase64Url(value: string): string {
 }
 
 export function encodeTrackSharePayload(track: Track, config: Config): string {
-  return `${COMPRESSED_PAYLOAD_PREFIX}${compressToEncodedURIComponent(serializeTrack(track, config))}`
+  return `${COMPACT_PAYLOAD_PREFIX}${compressToEncodedURIComponent(encodeCompactTrack(track, config))}`
+}
+
+function decompressPayload(payload: string): string {
+  const decompressed = decompressFromEncodedURIComponent(payload)
+  if (!decompressed) throw new Error('Failed to decompress shared track data')
+  return decompressed
 }
 
 export function decodeTrackSharePayload(payload: string): ReturnType<typeof deserializeTrack> {
   try {
-    if (payload.startsWith(COMPRESSED_PAYLOAD_PREFIX)) {
-      const decompressed = decompressFromEncodedURIComponent(payload.slice(COMPRESSED_PAYLOAD_PREFIX.length))
-      if (!decompressed) throw new Error('Failed to decompress shared track data')
+    if (payload.startsWith(COMPACT_PAYLOAD_PREFIX)) {
+      return decodeCompactTrack(decompressPayload(payload.slice(COMPACT_PAYLOAD_PREFIX.length)))
+    }
 
-      return deserializeTrack(decompressed)
+    if (payload.startsWith(COMPRESSED_PAYLOAD_PREFIX)) {
+      return deserializeTrack(decompressPayload(payload.slice(COMPRESSED_PAYLOAD_PREFIX.length)))
     }
 
     return deserializeTrack(decodeBase64Url(payload))

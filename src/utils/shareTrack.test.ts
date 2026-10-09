@@ -3,6 +3,7 @@ import { defaultConfig } from '@/store/configSlice'
 import type { Track } from '@/types'
 import { createDefaultGateOpenings } from '@/utils/gateOpenings'
 import { serializeTrack } from '@/schemas/track.schema'
+import { compressToEncodedURIComponent } from 'lz-string'
 import {
   createTrackShareUrl,
   decodeTrackSharePayload,
@@ -53,13 +54,25 @@ describe('shareTrack helpers', () => {
 
     expect(shareUrl.startsWith('https://sharedtrack.fpvooe.com/#')).toBe(true)
     expect(payload).toBe(encodeTrackSharePayload(track, defaultConfig))
-    expect(payload?.startsWith('z.')).toBe(true)
+    expect(payload?.startsWith('c.')).toBe(true)
 
     const decoded = decodeTrackSharePayload(payload)
     expect('error' in decoded).toBe(false)
     if ('error' in decoded) return
-    expect(decoded.track.id).toBe('share-track')
+    expect(decoded.track.name).toBe('Share Track')
+    expect(decoded.track.gates).toHaveLength(1)
     expect(decoded.config.fieldSize).toEqual(defaultConfig.fieldSize)
+  })
+
+  it('keeps lz-string compressed full-JSON share payloads readable', () => {
+    const track = createTestTrack()
+    const payload = `z.${compressToEncodedURIComponent(serializeTrack(track, defaultConfig))}`
+
+    const decoded = decodeTrackSharePayload(payload)
+
+    expect('error' in decoded).toBe(false)
+    if ('error' in decoded) return
+    expect(decoded.track.id).toBe('share-track')
   })
 
   it('keeps legacy base64 share payloads readable', () => {

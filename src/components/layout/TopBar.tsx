@@ -68,7 +68,7 @@ export const TopBar: FC<TopBarProps> = ({ onShortcutsClick, fpvModeActive, fpvDi
 
   const handleExport = () => {
     if (!currentTrack) return
-    const json = serializeTrack(currentTrack, config)
+    const json = serializeTrack(currentTrack, config, { pretty: true })
     const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')

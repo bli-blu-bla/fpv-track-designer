@@ -79,7 +79,7 @@ export function ViewerApp() {
   }
 
   const handleExport = () => {
-    const json = serializeTrack(track, config)
+    const json = serializeTrack(track, config, { pretty: true })
     const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')

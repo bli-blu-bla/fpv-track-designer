@@ -25,6 +25,9 @@ export interface GateOpening {
   reverse?: boolean;
 }
 
+/** Opening as persisted: geometry is derived from the gate type, only user state is stored. */
+export type PersistedGateOpening = Pick<GateOpening, 'id'> & Partial<Omit<GateOpening, 'id'>>;
+
 export interface Gate {
   id: string;
   type: GateType;

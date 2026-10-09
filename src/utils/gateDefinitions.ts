@@ -1,4 +1,4 @@
-import type { Gate, GateOpening, GateType } from '../types'
+import type { Gate, GateOpening, GateType, PersistedGateOpening } from '../types'
 import { GATE_TYPES } from '../types'
 import {
   FLAG_BASE_HEIGHT,
@@ -26,8 +26,8 @@ export interface GateDefinition {
   topHeight: number
   /** Default openings; `gateId` seeds per-gate variants (dive exit side). */
   createOpenings: (gateId?: string) => GateOpening[]
-  /** Repairs persisted openings (legacy ids, missing openings). Defaults to keeping them. */
-  normalizeOpenings?: (gate: Pick<Gate, 'id'> & { openings?: GateOpening[] }) => GateOpening[]
+  /** Renames openings saved under an older layout of this gate type to today's ids. */
+  remapLegacyOpenings?: (openings: PersistedGateOpening[]) => PersistedGateOpening[]
   /** Opening ids in default flight order. Defaults to the primary opening. */
   sequenceOpeningIds?: (gate: Gate) => string[]
   /** Same-gate transitions whose exit side is defined by the gate geometry (flight path). */
@@ -49,7 +49,7 @@ const STACKED_OPENING_ORDER = ['lower', 'middle', 'upper'] as const
 type DiveExitSide = 'front' | 'back' | 'left' | 'right'
 const DIVE_EXIT_SIDES: DiveExitSide[] = ['front', 'back', 'left', 'right']
 
-function hashGateId(seed: string): number {
+export function hashGateId(seed: string): number {
   let hash = 0
 
   for (const char of seed) {
@@ -59,17 +59,20 @@ function hashGateId(seed: string): number {
   return hash
 }
 
-function getDiveExitSide(gateId?: string): DiveExitSide {
-  if (!gateId) {
-    return DIVE_EXIT_SIDES[0]
-  }
+/** Number of id-derived gate variants; dive exit side and h-gate backrest side depend only on this. */
+export const GATE_ID_VARIANT_COUNT = 4
 
-  const index = hashGateId(gateId) % DIVE_EXIT_SIDES.length
-  return DIVE_EXIT_SIDES[index] ?? DIVE_EXIT_SIDES[0]
+/** Per-gate visual variant derived from the gate id (0–3). Share links store this instead of the id. */
+export function getGateIdVariant(gateId: string): number {
+  return hashGateId(gateId) % GATE_ID_VARIANT_COUNT
+}
+
+function getDiveExitSide(gateId?: string): DiveExitSide {
+  return gateId ? DIVE_EXIT_SIDES[getGateIdVariant(gateId)] : DIVE_EXIT_SIDES[0]
 }
 
 export function getHGateBackrestSide(gateId: string): -1 | 1 {
-  return hashGateId(gateId) % 2 === 0 ? -1 : 1
+  return getGateIdVariant(gateId) % 2 === 0 ? -1 : 1
 }
 
 function createOpening(
@@ -120,64 +123,21 @@ function createDiveOpenings(gateId?: string): GateOpening[] {
   }
 }
 
-/** Keeps per-opening user state (e.g. `reverse`) but forces geometry back to the defaults. */
-function mergeWithDefaultGeometry(defaultOpening: GateOpening, persisted: GateOpening | undefined): GateOpening {
-  return {
-    ...defaultOpening,
-    ...(persisted ?? {}),
-    id: defaultOpening.id,
-    position: defaultOpening.position,
-    rotation: defaultOpening.rotation,
-    rotationX: defaultOpening.rotationX,
-  }
+// Legacy double-h gates had two openings (`lower`, `upper`); their `upper` is today's `middle`.
+function remapLegacyDoubleHOpenings(openings: PersistedGateOpening[]): PersistedGateOpening[] {
+  const ids = new Set(openings.map((opening) => opening.id))
+  const isLegacyTwoOpening = openings.length === 2 && ids.has('upper') && !ids.has('middle')
+
+  return isLegacyTwoOpening
+    ? openings.map((opening) => opening.id === 'upper' ? { ...opening, id: 'middle' } : opening)
+    : openings
 }
 
-function normalizeByDefaultIds(defaults: GateOpening[], openings: GateOpening[] | undefined): GateOpening[] {
-  if (!openings || openings.length === 0) return defaults
+// Legacy dive gates had a single opening; it becomes the top entry.
+function remapLegacyDiveOpenings(openings: PersistedGateOpening[]): PersistedGateOpening[] {
+  const hasDiveIds = openings.some((opening) => opening.id === 'entry-top' || opening.id.startsWith('exit-'))
 
-  const openingsById = new Map(openings.map((opening) => [opening.id, opening]))
-  return defaults.map((defaultOpening) => mergeWithDefaultGeometry(defaultOpening, openingsById.get(defaultOpening.id)))
-}
-
-function normalizeDoubleHGateOpenings(gate: { openings?: GateOpening[] }): GateOpening[] {
-  const defaultOpenings = createStackedOpenings(STACKED_OPENING_ORDER)
-
-  if (!gate.openings || gate.openings.length === 0) {
-    return defaultOpenings
-  }
-
-  // Legacy double-h gates had two openings (`lower`, `upper`); their `upper` is today's `middle`.
-  const openingsById = new Map(gate.openings.map((opening) => [opening.id, opening]))
-  const isLegacyTwoOpeningDoubleH = gate.openings.length === 2 && openingsById.has('upper') && !openingsById.has('middle')
-
-  return defaultOpenings.map((defaultOpening) => {
-    const persistedOpening = !isLegacyTwoOpeningDoubleH
-      ? openingsById.get(defaultOpening.id)
-      : defaultOpening.id === 'middle'
-      ? openingsById.get('upper')
-      : defaultOpening.id === 'upper'
-      ? undefined
-      : openingsById.get(defaultOpening.id)
-
-    return mergeWithDefaultGeometry(defaultOpening, persistedOpening)
-  })
-}
-
-function normalizeDiveGateOpenings(gate: Pick<Gate, 'id'> & { openings?: GateOpening[] }): GateOpening[] {
-  const defaultOpenings = createDiveOpenings(gate.id)
-
-  if (!gate.openings || gate.openings.length === 0) {
-    return defaultOpenings
-  }
-
-  const hasDiveDefaultIds = gate.openings.some((opening) => opening.id === 'entry-top' || opening.id.startsWith('exit-'))
-
-  // Legacy dive gates had a single opening; it becomes the top entry.
-  if (!hasDiveDefaultIds && gate.openings.length === 1) {
-    return [{ ...gate.openings[0], ...defaultOpenings[0] }, defaultOpenings[1]]
-  }
-
-  return normalizeByDefaultIds(defaultOpenings, gate.openings)
+  return !hasDiveIds && openings.length === 1 ? [{ ...openings[0], id: 'entry-top' }] : openings
 }
 
 function isAdjacentStackedTransition(fromOpeningId: string, toOpeningId: string): boolean {
@@ -212,7 +172,6 @@ export const GATE_DEFINITIONS: Record<GateType, GateDefinition> = {
     isStartFinish: false,
     topHeight: BASE_HEIGHT * H_GATE_BACKREST_HEIGHT_MULTIPLIER,
     createOpenings: createHGateOpenings,
-    normalizeOpenings: (gate) => normalizeByDefaultIds(createHGateOpenings(), gate.openings),
     sequenceOpeningIds: () => ['lower', 'backrest-pass'],
     isSideDefinedTransition: (from, to) => (from === 'lower' && to === 'backrest-pass') || (from === 'backrest-pass' && to === 'lower'),
   },
@@ -221,7 +180,7 @@ export const GATE_DEFINITIONS: Record<GateType, GateDefinition> = {
     isStartFinish: false,
     topHeight: BASE_HEIGHT + BASE_HEIGHT * H_GATE_BACKREST_HEIGHT_MULTIPLIER,
     createOpenings: () => createStackedOpenings(STACKED_OPENING_ORDER),
-    normalizeOpenings: normalizeDoubleHGateOpenings,
+    remapLegacyOpenings: remapLegacyDoubleHOpenings,
     sequenceOpeningIds: () => [...STACKED_OPENING_ORDER],
     isSideDefinedTransition: isAdjacentStackedTransition,
     implicitPass: { between: ['lower', 'upper'], via: 'middle' },
@@ -243,7 +202,7 @@ export const GATE_DEFINITIONS: Record<GateType, GateDefinition> = {
     isStartFinish: false,
     topHeight: BASE_HEIGHT + TOP_BAR_HALF_THICKNESS,
     createOpenings: createDiveOpenings,
-    normalizeOpenings: normalizeDiveGateOpenings,
+    remapLegacyOpenings: remapLegacyDiveOpenings,
     sequenceOpeningIds: (gate) => {
       const entry = gate.openings.find((opening) => opening.id === 'entry-top') ?? gate.openings[0]
       const exit = gate.openings.find((opening) => opening.id.startsWith('exit-') && opening.id !== entry?.id) ?? gate.openings[1]
