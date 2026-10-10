@@ -2,8 +2,8 @@ import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from
 import type { Config, Track } from '@/core/types'
 import { deserializeTrack } from '@/core/schemas/track.schema'
 import { decodeCompactTrack, encodeCompactTrack } from '@/core/schemas/compactTrack.schema'
+import { normalizeViewerDomain } from './viewerRoute'
 
-const DEFAULT_VIEWER_DOMAIN = 'https://sharedtrack.fpvooe.com'
 /** Current links: lz-string compressed compact track (`schemas/compactTrack.schema.ts`). */
 const COMPACT_PAYLOAD_PREFIX = 'c.'
 /** Older links: lz-string compressed full export JSON. */
@@ -78,8 +78,7 @@ export function decodeTrackSharePayload(payload: string): ReturnType<typeof dese
 }
 
 export function createTrackShareUrl(track: Track, config: Config, viewerDomain?: string): string {
-  const domain = (viewerDomain || DEFAULT_VIEWER_DOMAIN).replace(/\/$/, '')
-  return `${domain}/#${encodeTrackSharePayload(track, config)}`
+  return `${normalizeViewerDomain(viewerDomain)}/#${encodeTrackSharePayload(track, config)}`
 }
 
 export function getTrackShortenerEndpoint(
