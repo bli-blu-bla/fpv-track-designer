@@ -4,6 +4,7 @@ import { createAccountSlice } from './accountSlice'
 import { createConfigSlice } from './configSlice'
 import { createEditorUiSlice } from './editorUiSlice'
 import { createSelectionSlice } from './selectionSlice'
+import { createSyncSlice } from './syncSlice'
 import { createTrackSlice } from './trackSlice'
 import { createUnsavedChangesSlice } from './unsavedChangesSlice'
 import type { AppState } from './types'
@@ -17,6 +18,7 @@ const createAppState: StateCreator<AppState> = (...args) => ({
   ...createEditorUiSlice(...args),
   ...createUnsavedChangesSlice(...args),
   ...createAccountSlice(...args),
+  ...createSyncSlice(...args),
 })
 
 /** Fresh, isolated editor store without devtools (tests). */

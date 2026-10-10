@@ -32,6 +32,7 @@ export const SaveTrackDialog: FC<SaveTrackDialogProps> = ({ open: openProp, onOp
   const { t } = useTranslation()
   const currentTrack = useAppStore((state) => state.currentTrack)
   const syncCurrentTrack = useAppStore((state) => state.syncCurrentTrack)
+  const syncTrack = useAppStore((state) => state.syncTrack)
   const config = useAppStore((state) => state.config)
   const storeOpen = useAppStore((state) => state.isSaveDialogOpen)
   const dismissSaveDialog = useAppStore((state) => state.dismissSaveDialog)
@@ -70,9 +71,12 @@ export const SaveTrackDialog: FC<SaveTrackDialogProps> = ({ open: openProp, onOp
     if (!currentTrack) return
     const trackName = name || currentTrack.name
     const updated = { ...currentTrack, name: trackName, updatedAt: new Date().toISOString() }
-    saveTrack(updated, config, { thumbnail: captureThumbnail?.() })
+    const thumbnail = captureThumbnail?.() ?? null
+    saveTrack(updated, config, { thumbnail })
     syncCurrentTrack(updated)
     window.dispatchEvent(new CustomEvent('track-saved'))
+    // Local save is done; the account upload runs in the background and never blocks (no-op when signed out).
+    void syncTrack(updated, config, thumbnail)
     if (isControlled) {
       onOpenChange?.(false)
       return

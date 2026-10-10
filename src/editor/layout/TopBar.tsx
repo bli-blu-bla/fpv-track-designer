@@ -3,10 +3,12 @@ import {
   ChevronDown,
   CircleHelp,
   CloudCheck,
+  CloudOff,
   Dice5,
   Download,
   FileJson,
   Languages,
+  Loader2,
   Play,
   Redo2,
   Save,
@@ -16,6 +18,7 @@ import {
 } from 'lucide-react'
 import { useAppStore } from '@/editor/store'
 import { serializeTrack, deserializeTrack } from '@/core/schemas/track.schema'
+import { loadTrack, loadTrackThumbnail } from '@/editor/storage'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -47,6 +50,40 @@ function HeaderIconButton({ label, className, ...props }: React.ComponentProps<t
           className={cn('size-8 text-muted-foreground hover:bg-secondary hover:text-foreground', className)}
           {...props}
         />
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  )
+}
+
+/** Saved-state indicator; when signed in it also reflects the account sync of the current track. */
+function SaveStateIndicator() {
+  const { t } = useTranslation()
+  const trackId = useAppStore((state) => state.currentTrack?.id)
+  const signedIn = useAppStore((state) => state.accountStatus === 'signed-in')
+  const syncStatus = useAppStore((state) => state.trackSyncStatus)
+  const syncTrack = useAppStore((state) => state.syncTrack)
+  const syncState = signedIn && syncStatus?.trackId === trackId ? syncStatus?.state : undefined
+
+  if (syncState === 'failed' || syncState === 'conflict') {
+    const retry = () => {
+      const saved = trackId ? loadTrack(trackId) : null
+      if (saved && trackId) void syncTrack(saved.track, saved.config, loadTrackThumbnail(trackId))
+    }
+    return (
+      <HeaderIconButton label={t('syncRetry')} onClick={retry} className="text-amber-400">
+        <CloudOff />
+      </HeaderIconButton>
+    )
+  }
+
+  const label = syncState === 'syncing' ? t('syncStateSyncing') : syncState === 'synced' ? t('syncSavedAndSynced') : t('savedState')
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span aria-label={label} className="flex shrink-0 px-1 text-subtle-foreground">
+          {syncState === 'syncing' ? <Loader2 className="size-4 animate-spin" /> : <CloudCheck className="size-4" />}
+        </span>
       </TooltipTrigger>
       <TooltipContent>{label}</TooltipContent>
     </Tooltip>
@@ -184,14 +221,7 @@ export const TopBar: FC<TopBarProps> = ({ onShortcutsClick, onShuffle, fpvModeAc
             <Save />
           </HeaderIconButton>
         ) : (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span aria-label={t('savedState')} className="flex shrink-0 px-1 text-subtle-foreground">
-                <CloudCheck className="size-4" />
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>{t('savedState')}</TooltipContent>
-          </Tooltip>
+          <SaveStateIndicator />
         ))}
         <HeaderIconButton label={t('shuffleTrack')} onClick={onShuffle}>
           <Dice5 />

@@ -11,6 +11,7 @@ import type { GateType } from '@/core/types'
 import { GATE_TYPES } from '@/core/types'
 import { SaveTrackDialog } from '@/editor/panels/SaveTrackDialog'
 import { UnsavedChangesDialog } from '@/editor/panels/UnsavedChangesDialog'
+import { SyncConflictDialog } from '@/editor/panels/SyncConflictDialog'
 import { TrackGallery } from '@/editor/panels/TrackGallery'
 import { KeyboardShortcutsDialog } from '@/editor/panels/KeyboardShortcutsDialog'
 import { Button } from '@/components/ui/button'
@@ -286,6 +287,7 @@ function App() {
       <ShareTrackDialog {...shareDialogProps} />
       <SaveTrackDialog captureThumbnail={captureThumbnail} />
       <UnsavedChangesDialog />
+      <SyncConflictDialog />
       <KeyboardShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
       <Dialog open={pendingGateInsertion !== null} onOpenChange={(open) => {
         if (!open) closeGateInsertionDialog()
