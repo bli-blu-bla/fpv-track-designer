@@ -13,6 +13,7 @@ import { SaveTrackDialog } from '@/editor/panels/SaveTrackDialog'
 import { UnsavedChangesDialog } from '@/editor/panels/UnsavedChangesDialog'
 import { SyncConflictDialog } from '@/editor/panels/SyncConflictDialog'
 import { TrackGallery } from '@/editor/panels/TrackGallery'
+import { CollectionsPanel } from '@/editor/panels/CollectionsPanel'
 import { KeyboardShortcutsDialog } from '@/editor/panels/KeyboardShortcutsDialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -84,11 +85,14 @@ function App() {
   const moveGateSequenceEntry = useAppStore((state) => state.moveGateSequenceEntry)
   const requestDestructiveAction = useAppStore((state) => state.requestDestructiveAction)
   const openSaveDialog = useAppStore((state) => state.openSaveDialog)
+  const canManageCollections = useAppStore((state) => state.accountNamespaces.length > 0)
 
   // SaveTrackDialog is now globally controlled via store (isSaveDialogOpen).
   // We keep the gallery/shortcuts/settings sheet state local.
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
-  const [activePanel, setActivePanel] = useState<SidePanelId | null>('library')
+  const [selectedPanel, setSelectedPanel] = useState<SidePanelId | null>('library')
+  // The collections panel disappears with the membership (e.g. after signing out).
+  const activePanel = selectedPanel === 'collections' && !canManageCollections ? null : selectedPanel
   const [viewMode, setViewMode] = useState<SceneViewMode>('perspective')
   const [viewResetToken, setViewResetToken] = useState(0)
   const [fpvModeActive, setFpvModeActive] = useState(false)
@@ -113,7 +117,7 @@ function App() {
   useKeyboardShortcuts({
     onSave: () => openSaveDialog(),
     onShuffle: shuffleTrack,
-    onOpenGallery: () => setActivePanel('tracks'),
+    onOpenGallery: () => setSelectedPanel('tracks'),
     onEscape: () => setFpvModeActive(false),
   })
 
@@ -231,20 +235,22 @@ function App() {
         <div className="flex min-h-0 flex-1">
           <ToolRail
             activePanel={activePanel}
-            onPanelToggle={(panel) => setActivePanel((current) => current === panel ? null : panel)}
+            onPanelToggle={(panel) => setSelectedPanel((current) => current === panel ? null : panel)}
             onShareClick={share}
             shareDisabled={!currentTrack}
             onShortcutsClick={() => setShortcutsOpen(true)}
+            showCollections={canManageCollections}
           />
           {activePanel && (
             <SidePanel
               title={t(PANEL_TITLE_KEYS[activePanel])}
-              onClose={() => setActivePanel(null)}
+              onClose={() => setSelectedPanel(null)}
               footer={activePanel === 'field' ? <ApplyConfigFooter /> : undefined}
             >
               {activePanel === 'library' && <GateLibraryPanel />}
               {activePanel === 'layers' && <LayersPanel />}
               {activePanel === 'tracks' && <TrackGallery />}
+              {activePanel === 'collections' && <CollectionsPanel captureThumbnail={captureThumbnail} />}
               {activePanel === 'field' && <GateConfigPanel />}
               {activePanel === 'appearance' && <ThemeConfigPanel />}
             </SidePanel>

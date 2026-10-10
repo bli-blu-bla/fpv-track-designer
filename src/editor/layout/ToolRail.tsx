@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
-import { FolderOpen, Keyboard, Layers, Palette, Settings2, Shapes, Share2 } from 'lucide-react'
+import { CalendarDays, FolderOpen, Keyboard, Layers, Palette, Settings2, Shapes, Share2 } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { useTranslation, type TranslationKey } from '@/i18n'
@@ -12,6 +12,8 @@ interface ToolRailProps {
   onShareClick: () => void
   shareDisabled: boolean
   onShortcutsClick: () => void
+  /** Only members of a namespace see the collections panel. */
+  showCollections?: boolean
 }
 
 interface RailItem {
@@ -53,7 +55,7 @@ function RailButton({ item }: { item: RailItem }) {
 }
 
 /** Left icon rail: toggles side panels; share opens its dialog. */
-export function ToolRail({ activePanel, onPanelToggle, onShareClick, shareDisabled, onShortcutsClick }: ToolRailProps) {
+export function ToolRail({ activePanel, onPanelToggle, onShareClick, shareDisabled, onShortcutsClick, showCollections = false }: ToolRailProps) {
   const panel = (key: SidePanelId, icon: LucideIcon): RailItem => ({
     key,
     icon,
@@ -66,6 +68,7 @@ export function ToolRail({ activePanel, onPanelToggle, onShareClick, shareDisabl
     panel('library', Shapes),
     panel('layers', Layers),
     { ...panel('tracks', FolderOpen), shortcut: 'G' },
+    ...(showCollections ? [panel('collections', CalendarDays)] : []),
     { key: 'share', icon: Share2, labelKey: 'shareTrack', onClick: onShareClick, disabled: shareDisabled },
     panel('field', Settings2),
     panel('appearance', Palette),
