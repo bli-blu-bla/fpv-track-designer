@@ -2,7 +2,7 @@
 
 Willkommen! Diese Anleitung führt dich Schritt für Schritt durch den **FPV Track Designer** – vom ersten zufällig generierten Kurs über die Feinabstimmung einzelner Gates bis zum Teilen deiner Strecke und dem Durchfliegen aus der Ich-Perspektive.
 
-Die App läuft komplett im Browser, ist **desktop-orientiert** (Maus + Tastatur) und speichert deine Strecken lokal auf deinem Gerät. Es gibt kein Login und kein Konto.
+Die App läuft komplett im Browser, ist **desktop-orientiert** (Maus + Tastatur) und speichert deine Strecken lokal auf deinem Gerät. Ein **Konto ist optional**: Ohne Anmeldung funktioniert alles wie gewohnt lokal; angemeldet werden deine Strecken zusätzlich zwischen deinen Geräten synchronisiert.
 
 ---
 
@@ -43,8 +43,8 @@ Alles Weitere in dieser Anleitung baut darauf auf.
 
 Die Oberfläche besteht aus diesen Bereichen:
 
-- **Kopfzeile (oben):** Rückgängig/Wiederholen, Streckenname (zum Umbenennen anklicken), Speicherstatus (Wolke = gespeichert, Diskette = ungespeicherte Änderungen speichern), Shuffle (Würfel), Stangenzähler, **Exportieren**-Menü (JSON-Export und Import), Sprache, Hilfe und der Button **FPV-Flug**.
-- **Symbolleiste (ganz links):** öffnet die Seitenpanels **Bibliothek**, **Ebenen**, **Meine Tracks** (Galerie), **Feld** und **Darstellung** sowie den Dialog **Track teilen**. Unten: **Tastenkürzel**.
+- **Kopfzeile (oben):** Rückgängig/Wiederholen, Streckenname (zum Umbenennen anklicken), Speicherstatus (Wolke = gespeichert, Diskette = ungespeicherte Änderungen speichern), Shuffle (Würfel), Stangenzähler, **Exportieren**-Menü (JSON-Export und Import), Sprache, Hilfe, **Anmelden**/Konto-Menü und der Button **FPV-Flug**.
+- **Symbolleiste (ganz links):** öffnet die Seitenpanels **Bibliothek**, **Ebenen**, **Meine Tracks** (Galerie), **Collections** (nur für Verwalter einer Collection), **Feld** und **Darstellung** sowie den Dialog **Track teilen**. Unten: **Tastenkürzel**.
 - **Seitenpanel (links):** der Inhalt des gewählten Panels; mit dem **×** schließen.
 - **3D-Szene (Mitte):** die Strecke selbst. Oben links wechselst du zwischen **3D** und **Draufsicht**, unten liegt die Leiste mit den Anzeige-Optionen. Angeklickt erscheinen direkt am Gate die Bearbeitungswerkzeuge.
 - **Inspektor (rechts, ab ca. 1024 px Fensterbreite):** ohne Auswahl die Kennzahlen der Strecke (Objekte, Stangen, Rundenlänge, Feld); mit einem ausgewählten Gate dessen Position, Höhe, Rotation und Durchflug-Reihenfolge sowie **Duplizieren** und **Löschen**.
@@ -212,7 +212,7 @@ Alle drei Einstellungen werden mit der Strecke gespeichert, exportiert und **bei
 - Das **Disketten-Symbol** neben dem Streckennamen (erscheint bei ungespeicherten Änderungen) oder **`Cmd/Ctrl + S`**.
 - Vergib einen **Streckennamen**; die Strecke wird **lokal im Browser** (`localStorage`) abgelegt.
 - Dabei wird automatisch ein **Vorschaubild** aus einer festen Schrägansicht erstellt, das in der Galerie erscheint. Strecken, die vor dieser Funktion gespeichert wurden, bekommen ihr Bild beim nächsten Speichern.
-- Gespeicherte Strecken bleiben an **diesen Browser auf diesem Gerät** gebunden.
+- Ohne Konto bleiben gespeicherte Strecken an **diesen Browser auf diesem Gerät** gebunden. Mit Konto werden sie nach dem lokalen Speichern zusätzlich hochgeladen (siehe [10.3](#103-konto--synchronisierung)).
 
 ### 10.2 Galerie
 
@@ -220,7 +220,23 @@ Alle drei Einstellungen werden mit der Strecke gespeichert, exportiert und **bei
 
 - **Laden** – Klick auf das Vorschaubild; ersetzt die aktuelle Strecke (Nachfrage bei ungespeicherten Änderungen),
 - **Duplizieren** – erstellt eine Kopie unter neuem Namen (inklusive Vorschaubild),
-- **Löschen** – entfernt die Strecke nach Bestätigung.
+- **Löschen** – entfernt die Strecke nach Bestätigung. Liegt sie auch im Konto, fragt die App, ob sie **nur auf diesem Gerät**, **nur im Konto** oder **überall** gelöscht werden soll.
+
+Angemeldet zeigt jede Karte zusätzlich ihren Sync-Status:
+
+| Status | Bedeutung |
+| --- | --- |
+| **Synchronisiert** | Lokal und im Konto identisch. |
+| **Nur lokal** | Noch nicht im Konto – mit **Hochladen** (Wolke mit Pfeil) übertragen. |
+| **Nicht synchronisiert** | Lokal oder im Konto geändert, ohne dass beide abgeglichen wurden – **Hochladen** gleicht ab. |
+| **Nur im Konto** | Kommt von einem anderen Gerät. **Laden** holt die Strecke auf dieses Gerät. |
+
+### 10.3 Konto & Synchronisierung
+
+- **Anmelden:** Klick auf **Anmelden** rechts in der Kopfzeile. Im Dialog meldest du dich mit E-Mail und Passwort an oder legst unter **Registrieren** ein Konto an (Passwort mindestens 8 Zeichen). Sind Anmeldedienste wie Google oder Discord eingerichtet, erscheinen sie als zusätzliche Buttons. **Passwort vergessen?** schickt eine Mail zum Zurücksetzen.
+- **Konto-Menü:** Angemeldet zeigt die Kopfzeile deinen Namen. Das Menü enthält **Abmelden** und die Collections, die du verwalten darfst.
+- **Speichern mit Konto:** Die Strecke wird immer zuerst lokal gespeichert, danach im Hintergrund ins Konto hochgeladen. Neben dem Streckennamen siehst du den Status: Wolke mit Haken = gespeichert und synchronisiert, durchgestrichene Wolke = **nicht synchronisiert** (Klick darauf versucht es erneut). Fehlt die Verbindung, geht nichts verloren – die lokale Kopie bleibt, und du kannst später hochladen.
+- **Auf einem anderen Gerät geändert:** Wurde dieselbe Strecke inzwischen auf einem anderen Gerät gespeichert, fragt die App: **Überschreiben** (deine Version ersetzt die im Konto), **Als Kopie speichern** (deine Version wird eine neue Strecke, die du weiter bearbeitest) oder **Abbrechen** (nur lokal gespeichert, Status „Nicht synchronisiert“).
 
 ---
 
@@ -240,14 +256,15 @@ Der schnellste Weg, eine Strecke weiterzugeben – ohne Datei, ohne Konto:
 
 1. Klicke in der Symbolleiste links auf das Teilen-Symbol (**„Track Teilen"**).
 2. Es öffnet sich der Dialog **„Track teilen"**. Er zeigt sofort den **„Langen Link"** – dieser funktioniert bereits sofort.
-3. Parallel versucht die App, einen **„Teilbaren Link"** (Kurzlink) zu erstellen. Solange das läuft: „Kurzlink wird erstellt. Bis dahin ist der lange Link bereits nutzbar." Bei Erfolg erscheint „Kurzlink erstellt.".
-   - Klappt das Erstellen des Kurzlinks nicht, kannst du den langen Link trotzdem teilen.
+3. Parallel erstellt die App einen **„Teilbaren Link"** (Kurzlink, z. B. `https://sharedtrack.fpvooe.com/s/k7qx2ab9`). Solange das läuft: „Kurzlink wird erstellt. Bis dahin ist der lange Link bereits nutzbar." Bei Erfolg erscheint „Kurzlink erstellt.".
+   - Klappt das Erstellen des Kurzlinks nicht (z. B. Server nicht erreichbar oder zu viele Kurzlinks in kurzer Zeit), kannst du den langen Link trotzdem teilen.
+   - Kurzlinks brauchen kein Konto. Dieselbe Strecke ergibt immer denselben Kurzlink. Ein Kurzlink wird **gelöscht, wenn er 4 Monate lang nicht geöffnet wurde** – jedes Öffnen verlängert ihn. Der lange Link funktioniert dagegen unbegrenzt, weil er die Strecke selbst enthält.
 4. Sobald ein Kurzlink existiert, erscheint zusätzlich ein **QR-Code**, den du als **PNG** oder **SVG** herunterladen kannst.
 5. **„Link kopieren"** kopiert den Kurzlink (falls vorhanden), sonst den langen Link. Danach zeigt der Button **„Kopiert!"**.
 
 ### 12.1 Was der Empfänger sieht (Viewer)
 
-Der Link öffnet eine **reine Ansichtsseite** (Read-only) – ohne Bearbeitungsfunktionen. Die Track-Daten stecken im **URL-Fragment** (`#…`), werden also nicht an einen Server gesendet.
+Der Link öffnet eine **reine Ansichtsseite** (Read-only) – ohne Bearbeitungsfunktionen. Beim langen Link stecken die Track-Daten im **URL-Fragment** (`#…`) und werden nicht an einen Server gesendet; der Kurzlink lädt sie vom Server.
 
 Im Viewer kann der Empfänger:
 
@@ -256,7 +273,29 @@ Im Viewer kann der Empfänger:
 - den Track als **JSON herunterladen** (wieder importierbar in den Editor),
 - die **Viewer-Hilfe** öffnen (erscheint beim ersten Besuch automatisch).
 
-Ist ein Link leer oder beschädigt, erscheint **„Track kann nicht geladen werden"** mit einer passenden Meldung.
+Ist ein Link leer oder beschädigt, erscheint **„Track kann nicht geladen werden"** mit einer passenden Meldung – z. B. „Dieser Link ist abgelaufen oder existiert nicht“ für einen gelöschten Kurzlink oder „Der Server ist gerade nicht erreichbar“.
+
+### 12.2 Collections & Labels (für Verwalter)
+
+Vereine und Veranstalter (z. B. **FPV Linz**) können ihre Strecken in einer **Collection** sammeln: vergangene Trainings und kommende Rennen an einem Ort. Die Collection hat einen Kurznamen, z. B. `fpv-linz`.
+
+**Für alle (ohne Konto):**
+
+| Link | Zeigt |
+| --- | --- |
+| `sharedtrack.fpvooe.com/t/fpv-linz` | Übersicht aller Strecken der Collection: **Kommende** (nächster Termin zuerst), **Vergangene** (neueste zuerst), Einträge ohne Datum am Ende. |
+| `sharedtrack.fpvooe.com/t/fpv-linz:latest` | Die Strecke, auf der gerade das Label `latest` liegt. |
+| `sharedtrack.fpvooe.com/t/fpv-linz@<id>` | Genau einen Eintrag. |
+
+Über einer Strecke aus einer Collection zeigt der Viewer Collection, Eintragsnamen, Labels und den Link **„Alle Tracks von …“**.
+
+**Labels** funktionieren wie Docker-Tags: Ein Eintrag kann mehrere Labels haben (z. B. `latest` und `10-okt-2026`), aber jedes Label gibt es pro Collection nur einmal. Ein Link auf `fpv-linz:latest` bleibt gleich, auch wenn das Label später auf eine neue Strecke gelegt wird. `latest` ist kein Sonderfall – es wird von Hand gesetzt wie jedes andere Label.
+
+**Für Verwalter:** Wer Mitglied einer Collection ist, sieht nach dem Anmelden in der Symbolleiste das Panel **Collections** (Kalender-Symbol). Mitglieder trägt der Betreiber ein (siehe [`collections.md`](./collections.md)).
+
+- **Aktuellen Track veröffentlichen:** Name, optionales **Datum** und **Labels** eingeben (Enter oder Komma fügt ein Label hinzu; erlaubt sind Kleinbuchstaben, Ziffern, Punkt, Unterstrich und Bindestrich – Leerzeichen werden zu Bindestrichen). Das aktuelle Vorschaubild wird mitgespeichert.
+- **Label verschieben:** Liegt ein Label schon auf einem anderen Eintrag, fragt die App: „Label ‚latest‘ liegt auf ‚Training 3. Okt‘. Verschieben?“ Erst nach **Verschieben** wird es umgehängt.
+- **Eintrag bearbeiten** (Klick auf den Eintrag): umbenennen, Datum ändern, Labels hinzufügen oder entfernen, **Track-Daten durch aktuellen Editor-Track ersetzen**, **In Editor laden**, **Link kopieren** (Eintrag oder einzelnes Label) und **Eintrag löschen** (seine Labels verschwinden mit).
 
 > **Technischer Hintergrund (Deployment):** Der Editor läuft unter `trackdesigner.fpvooe.com`, der Viewer unter `sharedtrack.fpvooe.com`. Details zur Einrichtung stehen in [`coolify-track-sharing.md`](./coolify-track-sharing.md).
 
@@ -325,14 +364,15 @@ Während eines **FPV-Flugs** sind die Kamera-Bedienelemente deaktiviert, bis du 
 - Es gibt **keine einstellbare Gate-Größe** und **keinen Zufalls-Seed** – nur Gate-Anzahl und Feldgröße.
 - Der **FPV-Flug** zeigt keine Fortschrittsanzeige und hat eine feste Geschwindigkeit.
 - Der **Viewer ist strikt read-only** – Änderungen sind dort nicht möglich.
-- Tracks liegen in `localStorage` deines Browsers. Löschst du Browserdaten, sind auch die lokal gespeicherten Strecken weg – exportiere wichtige Strecken zusätzlich als **JSON**.
+- Tracks liegen in `localStorage` deines Browsers. Löschst du Browserdaten, sind auch die lokal gespeicherten Strecken weg – exportiere wichtige Strecken zusätzlich als **JSON** oder melde dich an, damit sie im Konto liegen.
 - Sind ungespeicherte Änderungen vorhanden, fragt die App bei destruktiven Aktionen (Shuffle, Import, Laden, Duplizieren, Konfiguration anwenden) nach: **Abbrechen**, **Zuerst speichern** oder **Verwerfen**.
 
 **Häufige Fragen**
 
 - *Der FPV-Button ist ausgegraut.* → Deine Strecke hat weniger als 2 Gates.
 - *Der Kurzlink kam nicht.* → Kein Problem, teile einfach den **langen Link**; er funktioniert immer.
-- *Beim Öffnen eines Links erscheint eine Fehlermeldung.* → Der Link ist unvollständig oder beschädigt. Bitte den Absender, ihn erneut zu teilen.
+- *Beim Öffnen eines Links erscheint eine Fehlermeldung.* → Der Link ist unvollständig oder beschädigt – oder ein Kurzlink wurde 4 Monate nicht geöffnet und ist abgelaufen. Bitte den Absender, ihn erneut zu teilen.
+- *Neben dem Streckennamen ist eine durchgestrichene Wolke.* → Die Strecke ist lokal gespeichert, aber nicht im Konto. Klick darauf versucht es erneut.
 
 ---
 

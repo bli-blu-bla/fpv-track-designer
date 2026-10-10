@@ -1,6 +1,6 @@
 # Core — Domain Logic (no React)
 
-**Domain:** Types, gate definitions, track generation, flight path, persistence schemas, share-link codec, theme lookup. Shared by editor and viewer. ESLint forbids imports of React, `@react-three/*`, `@/components`, `@/scene`, `@/editor`, `@/viewer` here.
+**Domain:** Types, gate definitions, track generation, flight path, persistence schemas, share-link codec, viewer routes, public API client, theme lookup. Shared by editor and viewer. ESLint forbids imports of React, `@react-three/*`, `@/components`, `@/scene`, `@/editor`, `@/viewer` and the `pocketbase` SDK here.
 
 ## STRUCTURE
 ```
@@ -25,8 +25,13 @@ core/
 │   ├── track.schema.ts    # Zod file/storage format 2.0.0; parseTrackExport, (de)serializeTrack
 │   └── compactTrack.schema.ts # positional share-link format
 ├── share/
-│   ├── shareTrack.ts      # `c.` / `z.` / base64 share payloads, viewer URL, shortener client
+│   ├── shareTrack.ts      # `c.` / `z.` / base64 share payloads, long viewer URL
+│   ├── viewerRoute.ts     # parseViewerRoute() + buildShareUrl/buildCollectionUrl/buildLabelUrl/buildEntryUrl
 │   └── qrCode.ts          # share QR PNG/SVG
+├── api/                   # public PocketBase API via fetch (no SDK, no React)
+│   ├── http.ts            # requestJson(), ApiError { kind, status, resource }, getApiBaseUrl() (VITE_API_URL)
+│   ├── shares.ts          # createShare(payload) / getShare(id)
+│   └── collections.ts     # getNamespace, listEntries, getEntry, getEntryByLabel; slug/label/id patterns
 └── theme/themeColors.ts   # getSceneLook({ sky, ground, quality }) (cached), getGateColors(), shadeHex()
 ```
 
@@ -46,8 +51,17 @@ Dive exit side and h-gate backrest side derive from the gate id (`getGateIdVaria
 - `z.` (lz-string full JSON) and prefix-less base64url links must keep decoding.
 - Decoded compact payloads are turned into an export object and still pass `trackExportSchema`.
 
+## API CLIENT (`api/`)
+- Only `fetch`; every failure is an `ApiError` with `kind` `not-found | bad-request | rate-limited | server | network | not-configured`. Client-side lookups set `resource` (`share | namespace | entry | label`) so callers can tell which part was missing.
+- Returns raw `data` (`unknown`) / `payload` (`string`); callers validate with `parseTrackExport()` / `decodeCompactTrack()`. No track validation in the client.
+- Inputs used in PocketBase filters are checked against the patterns first (no filter injection).
+- `options.baseUrl` overrides `VITE_API_URL` (tests).
+
+## VIEWER ROUTES (`share/viewerRoute.ts`)
+`/#c.…` hash (wins) · `/s/<8 chars>` short link · `/t/<ns>` overview · `/t/<ns>:<label>` · `/t/<ns>@<15-char id>`. Invalid input → `{ kind: 'empty' }`. Builders take the viewer domain (default `https://sharedtrack.fpvooe.com`).
+
 ## CONVENTIONS
-- Pure functions; no store, DOM side effects only where the API is about the browser (`qrCode` downloads, shortener `fetch`).
+- Pure functions; no store, DOM side effects only where the API is about the browser (`qrCode` downloads, `api/` fetch).
 - `import type` for type-only imports; constants near the top of each file.
 - Tests are co-located; browser API mocks stay local to each test file.
 
@@ -60,4 +74,5 @@ Dive exit side and h-gate backrest side derive from the gate id (`getGateIdVaria
 ## TESTING
 - `flightPath.test.ts` is the path-geometry regression suite; keep gate-specific cases.
 - `track.schema.test.ts` covers legacy imports, format 2.0.0 size rules and error messages; `compactTrack.schema.test.ts` covers the link codec incl. id variants.
-- `generator`, `gateOpenings`, `gateSequence`, `gateDefinitions`, `poleCount`, `shareTrack`, `qrCode` have co-located suites.
+- `generator`, `gateOpenings`, `gateSequence`, `gateDefinitions`, `poleCount`, `shareTrack`, `viewerRoute`, `qrCode` have co-located suites.
+- `api/shares.test.ts`, `api/collections.test.ts` stub `fetch` per file (status → kind mapping, parsing, not-found cases).

@@ -8,7 +8,7 @@ src/
 ├── index.css, styles/   # Tailwind v4 CSS-first tokens; vendored shadcn tailwind.css
 ├── lib/utils.ts         # cn()
 ├── components/          # ErrorBoundary + shadcn primitives (ui/)
-├── core/                # domain logic, no React            → core/AGENTS.md
+├── core/                # domain logic, no React, fetch API → core/AGENTS.md
 ├── scene/               # shared R3F rendering               → scene/AGENTS.md
 ├── editor/              # editor app, store, panels, handles → editor/AGENTS.md
 └── viewer/              # read-only share viewer             → viewer/AGENTS.md
@@ -23,6 +23,8 @@ core  ←  scene  ←  editor
 ```
 
 `components/`, `lib/` and `i18n.ts` are shared by everything above `core`.
+
+The `pocketbase` SDK is allowed only in `editor/api/`; ESLint forbids it everywhere else so the viewer bundle stays SDK-free. Backend: `../pocketbase/AGENTS.md`.
 
 ## CONVENTIONS
 - Named exports; `editor/App.tsx` is the only default export.

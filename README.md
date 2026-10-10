@@ -18,7 +18,9 @@ Das Projekt kombiniert eine interaktive React-Oberfläche mit einer Three.js/R3F
 - **Lokale Speicherung** von Tracks im Browser über `localStorage`
 - **Track-Galerie** zum Laden, Duplizieren und Löschen gespeicherter Strecken
 - **Import/Export** von Strecken als JSON
-- **Track teilen** per Link (lang + Kurzlink) und QR-Code (PNG/SVG), angezeigt im Read-only-Viewer
+- **Track teilen** per Link (lang + Kurzlink `/s/…`) und QR-Code (PNG/SVG), angezeigt im Read-only-Viewer
+- **Optionales Konto** mit Synchronisierung von „Meine Tracks“ zwischen Geräten
+- **Collections mit Labels** für Vereine/Veranstalter, z. B. `fpv-linz:latest` (Viewer-Übersicht unter `/t/fpv-linz`)
 - **FPV-Flug**: automatischer Durchflug der Strecke aus Pilotensicht
 - **Szene, Untergrund und Grafikqualität**: Tag, Dämmerung, Nacht (Neon) oder Studio; Rasen, Turnsaal (Parkett mit Spielfeldlinien) oder Asphalt; einfache oder realistische Grafik
 - **Stangenzähler** für den Materialbedarf
@@ -38,6 +40,7 @@ Eine ausführliche Anleitung steht in der [Nutzerdokumentation](docs/NUTZERDOKUM
 - [Tailwind CSS](https://tailwindcss.com/) v4
 - [shadcn/ui](https://ui.shadcn.com/) Komponenten
 - [Vitest](https://vitest.dev/) für Tests
+- [PocketBase](https://pocketbase.io/) als Backend für Kurzlinks, Konten und Collections (`pocketbase/`)
 
 ## Voraussetzungen
 
@@ -55,8 +58,11 @@ npm ci
 ## Entwicklung starten
 
 ```bash
+docker compose up pocketbase   # optional: lokales Backend auf http://127.0.0.1:8090 (Dashboard /_/)
 npm run dev
 ```
+
+Ohne laufendes PocketBase funktioniert der Editor lokal wie gewohnt; nur Kurzlinks, Konto und Collections sind dann nicht verfügbar. `.env.development` zeigt mit `VITE_API_URL` auf die lokale Instanz.
 
 Die App läuft anschließend standardmäßig unter:
 
@@ -72,6 +78,7 @@ npm run build         # TypeScript prüfen und Editor-Build nach dist/ erstellen
 npm run build:viewer  # Share-Viewer als einzelne HTML-Datei nach dist-viewer/ bauen
 npm run build:all     # Editor und Viewer bauen
 npm run preview       # Editor-Build lokal ansehen
+npm run preview:viewer # Viewer-Build lokal ansehen (mit Pfad-Routing /s/… und /t/…)
 npm run lint          # ESLint ausführen
 npm run test          # Vitest starten
 ```
@@ -127,21 +134,27 @@ Alternativ kann die Ansicht auch mit `Space + linke Maustaste ziehen` verschoben
 ```text
 src/
 ├── core/        # Domänenlogik ohne React: Typen, Gate-Definitionen, Generator,
-│                # Flugpfad, Zod-Schemas, Share-Link-Format, Szenen-Presets
+│                # Flugpfad, Zod-Schemas, Share-Link-Format, Viewer-Routen, API-Client (fetch)
 ├── scene/       # Gemeinsame 3D-Szene (R3F): Canvas, Kamera, Gates, Flugpfad
-├── editor/      # Editor: App, Zustand-Store, Speicher, Panels, Bearbeitungs-Handles
+├── editor/      # Editor: App, Zustand-Store, Speicher, Panels, Bearbeitungs-Handles,
+│                # Konto/Sync/Collections (PocketBase-SDK nur in editor/api)
 ├── viewer/      # Read-only Share-Viewer
 ├── components/  # shadcn/ui-Primitives und ErrorBoundary
 └── i18n.ts      # Übersetzungen DE/EN
+pocketbase/      # Backend: Dockerfile (gepinnte Version), Migrationen, Hooks
 ```
 
 Die Abhängigkeiten zeigen nur in eine Richtung (`core ← scene ← editor/viewer`); ESLint prüft das.
 
 ## Daten und Speicherung
 
-Die App benötigt kein eigenes Backend. Gespeicherte Tracks werden lokal im Browser abgelegt. Dadurch bleiben Daten auf dem Gerät, sind aber auch an den jeweiligen Browser und dessen Speicher gekoppelt.
+Gespeicherte Tracks werden immer zuerst lokal im Browser (`localStorage`) abgelegt. Das einzige Backend ist [PocketBase](https://pocketbase.io/) (`pocketbase/`) für drei optionale Dinge:
 
-Beim Teilen steckt die komplette Strecke komprimiert im Link. Nur für Kurzlinks wird optional ein externer n8n-Webhook angesprochen. Deployment-Details: [`docs/coolify-track-sharing.md`](docs/coolify-track-sharing.md).
+- **Kurzlinks** (`/s/<id>`): anonym, unveränderlich, gleicher Inhalt ergibt denselben Link; nach 4 Monaten ohne Aufruf gelöscht.
+- **Konten** mit Synchronisierung von „Meine Tracks“ zwischen Geräten (inkl. Konflikterkennung).
+- **Collections** mit Labels für Vereine/Veranstalter; Verwaltung von Collections und Mitgliedern im PocketBase-Dashboard ([`docs/collections.md`](docs/collections.md)).
+
+Der lange Link (`/#c.…`) enthält die komplette Strecke komprimiert und funktioniert ohne Server. Deployment-Details (Editor, Viewer, PocketBase): [`docs/coolify-track-sharing.md`](docs/coolify-track-sharing.md).
 
 ## Tests
 
@@ -152,7 +165,8 @@ Die Kernlogik ist mit Vitest abgedeckt, unter anderem für:
 - Flugpfad-Berechnung
 - Store-Slices
 - LocalStorage-Persistenz
-- Share-Links (kompaktes Format) und Import/Export-Schema
+- Share-Links (kompaktes Format), Viewer-Routen und Import/Export-Schema
+- API-Client, Konto, Sync-Konflikte und Label-Verschieben (Server gemockt)
 - Gate-Definitionen und Bearbeitungs-Handles
 
 ```bash

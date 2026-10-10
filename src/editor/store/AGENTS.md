@@ -12,6 +12,8 @@ store/
 ├── selectionSlice.ts       # selectedGateId(s), selectGate, setSelectedGates
 ├── editorUiSlice.ts        # delete dialog, pending insertion, sequence editor, isDraggingGate
 ├── unsavedChangesSlice.ts  # requestDestructiveAction(reason) → Promise<boolean>, save dialog
+├── accountSlice.ts         # accountUser/accountStatus/accountNamespaces; initAccount() (returns cleanup), login/register/OAuth/logout
+├── syncSlice.ts            # trackSyncStatus { trackId, state }, syncConflict; syncTrack(), resolveSyncConflict()
 ├── trackOperations.ts      # pure: normalizeTrack, touchTrack, snapping/clamping, move deltas, singleton rule
 └── history.ts              # pure: TrackHistoryEntry, pushHistory, MAX_HISTORY = 50, selection restore
 ```
@@ -21,6 +23,7 @@ store/
 - Undoable edits go through `applyEdit(state, edit)` in `trackSlice.ts`: snapshots history, normalizes + stamps `updatedAt`, sets `isTrackModified`. Return `null` from `edit` to abort without a history entry.
 - Live drag updates (`setGatePosition`, `setGateRotation`) skip history; `commitGateDrag()` pushes the drag-start snapshot once.
 - `import type` for type-only imports; `AppState` lives in `types.ts` to avoid import cycles.
+- `accountSlice`/`syncSlice` call `src/editor/api` and `src/editor/sync`; tests mock those modules. `initAccount()` validates the stored token before subscribing and returns a cleanup, so the StrictMode double mount is safe.
 
 ## DIRTY-STATE / UNSAVED-CHANGES FLOW
 `isTrackModified` is the single source of truth for unsaved changes. It is set by undoable edits and drag commits, reset by `setTrack`, `replaceTrack` and `markTrackSaved`, and stored in history entries so undo/redo restores it.
