@@ -56,6 +56,8 @@ describe('ToolRail', () => {
     useAppStore.setState({ config: defaultConfig, currentTrack: null })
     vi.clearAllMocks()
     vi.unstubAllGlobals()
+    vi.unstubAllEnvs()
+    vi.stubEnv('VITE_API_URL', 'https://pb.test')
   })
 
   it('lists panels, gallery, share and shortcuts in rail order', () => {
@@ -85,12 +87,9 @@ describe('ToolRail', () => {
     expect(screen.getByRole('button', { name: 'Track Teilen' })).toHaveProperty('disabled', true)
   })
 
-  it('opens a share dialog and keeps the long viewer URL when the short URL arrives', async () => {
+  it('opens a share dialog and adds the PocketBase short link when it arrives', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValueOnce(
-      new Response(JSON.stringify({ shortUrl: 'http://go.fpvooe.com/viMbW' }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }),
+      new Response(JSON.stringify({ id: 'k7qx2ab9' }), { status: 201 }),
     )
     vi.stubGlobal('fetch', fetchMock)
     useAppStore.setState({ currentTrack: createMockTrack('share') })
@@ -101,13 +100,36 @@ describe('ToolRail', () => {
 
     const longShareInput = screen.getByLabelText('Langer Link')
     const shortShareInput = screen.getByLabelText('Teilbarer Link')
-    expect((longShareInput as HTMLInputElement).value.startsWith('https://sharedtrack.fpvooe.com/#')).toBe(true)
+    expect((longShareInput as HTMLInputElement).value.startsWith('https://sharedtrack.fpvooe.com/#c.')).toBe(true)
     expect(shortShareInput).toHaveProperty('value', '')
 
-    await waitFor(() => expect(shortShareInput).toHaveProperty('value', 'http://go.fpvooe.com/viMbW'))
-    expect(fetchMock).toHaveBeenCalledWith(
-      '/api/shorten-track',
-      expect.objectContaining({ method: 'POST', headers: { 'Content-Type': 'application/json' } }),
-    )
+    await waitFor(() => expect(shortShareInput).toHaveProperty('value', 'https://sharedtrack.fpvooe.com/s/k7qx2ab9'))
+    expect(fetchMock).toHaveBeenCalledWith('https://pb.test/api/shares', expect.objectContaining({ method: 'POST' }))
+    const body: unknown = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))
+    expect(body).toEqual({ payload: expect.stringMatching(/^\[2,"Track share"/) })
+  })
+
+  it('keeps the long #c. link usable when the server fails', async () => {
+    vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockRejectedValueOnce(new TypeError('offline')))
+    useAppStore.setState({ currentTrack: createMockTrack('share') })
+
+    render(<RailWithShare />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Track Teilen' }))
+
+    expect(await screen.findByText('Der Kurzlink konnte nicht erstellt werden. Du kannst den langen Link trotzdem teilen.')).not.toBeNull()
+    expect((screen.getByLabelText('Langer Link') as HTMLInputElement).value).toContain('/#c.')
+    expect(screen.getByLabelText('Teilbarer Link')).toHaveProperty('value', '')
+  })
+
+  it('explains rate limiting', async () => {
+    vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockResolvedValueOnce(new Response('{}', { status: 429 })))
+    useAppStore.setState({ currentTrack: createMockTrack('share') })
+
+    render(<RailWithShare />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Track Teilen' }))
+
+    expect(await screen.findByText(/Zu viele Kurzlinks/)).not.toBeNull()
   })
 })

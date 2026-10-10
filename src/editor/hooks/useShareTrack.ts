@@ -1,9 +1,13 @@
 import { useCallback, useState } from 'react'
 import { useAppStore } from '@/editor/store'
-import { createTrackShareUrl, getTrackShortenerEndpoint, shortenTrackShareUrl } from '@/core/share/shareTrack'
+import { createShare } from '@/core/api/shares'
+import { isApiError } from '@/core/api/http'
+import { encodeCompactTrack } from '@/core/schemas/compactTrack.schema'
+import { createTrackShareUrl } from '@/core/share/shareTrack'
+import { buildShareUrl } from '@/core/share/viewerRoute'
 import { useTranslation } from '@/i18n'
 
-/** Builds the viewer link for the current track and requests a short link in the background. */
+/** Builds the inline `#c.` viewer link and requests a `/s/<id>` short link from PocketBase in the background. */
 export function useShareTrack() {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
@@ -16,16 +20,19 @@ export function useShareTrack() {
     const { currentTrack, config } = useAppStore.getState()
     if (!currentTrack) return
 
-    const longUrl = createTrackShareUrl(currentTrack, config, import.meta.env.VITE_VIEWER_DOMAIN)
-    setShareUrl(longUrl)
+    const viewerDomain = import.meta.env.VITE_VIEWER_DOMAIN
+    setShareUrl(createTrackShareUrl(currentTrack, config, viewerDomain))
     setShortShareUrl('')
     setShortenError(null)
     setIsShortening(true)
     setOpen(true)
 
-    void shortenTrackShareUrl(longUrl, { endpoint: getTrackShortenerEndpoint() })
-      .then((shortUrl) => setShortShareUrl(shortUrl))
-      .catch(() => setShortenError(t('shareDialogError')))
+    void createShare(encodeCompactTrack(currentTrack, config))
+      .then(({ id }) => setShortShareUrl(buildShareUrl(id, viewerDomain)))
+      .catch((error: unknown) => {
+        const rateLimited = isApiError(error) && error.kind === 'rate-limited'
+        setShortenError(t(rateLimited ? 'shareDialogRateLimited' : 'shareDialogError'))
+      })
       .finally(() => setIsShortening(false))
   }, [t])
 

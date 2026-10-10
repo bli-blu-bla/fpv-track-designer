@@ -1,55 +1,85 @@
-# Coolify Deployment: Track Teilen Viewer
+# Coolify Deployment: Editor, Viewer and PocketBase
 
-The Track Teilen feature uses two static deployments from the same GitHub repository.
+The app runs as three services from the same GitHub repository and branch.
+
+| Service | Domain (example) | Build | Port |
+| --- | --- | --- | --- |
+| Editor | `trackdesigner.fpvooe.com` | `Dockerfile` | `80` |
+| Viewer | `sharedtrack.fpvooe.com` | `Dockerfile.viewer` | `80` |
+| PocketBase | `pb.fpvooe.com` | `pocketbase/Dockerfile` (build context `pocketbase/`) | `8090` |
+
+## Build-time environment (editor and viewer)
+
+Vite inlines these at build time; `.env.production` holds the defaults.
+
+- `VITE_API_URL=https://pb.fpvooe.com` — PocketBase origin used for short links, accounts and collections.
+- `VITE_VIEWER_DOMAIN=https://sharedtrack.fpvooe.com` — editor only; base for every viewer link.
 
 ## Editor service
 
-- Domain: `trackdesigner.fpvooe.com`
-- Recommended deployment: use `Dockerfile` so nginx can serve `dist/` and proxy `/api/shorten-track` to n8n.
-- If using a static publish directory instead, configure an equivalent platform reverse proxy for `/api/shorten-track` or configure n8n CORS for `https://trackdesigner.fpvooe.com`.
-- Required environment variable:
-  - `VITE_VIEWER_DOMAIN=https://sharedtrack.fpvooe.com`
-- Optional environment variable:
-  - `VITE_TRACK_SHORTENER_ENDPOINT=/api/shorten-track`
+- Dockerfile: `Dockerfile` (nginx serves `dist/`, SPA fallback to `index.html`).
+- The editor talks to PocketBase directly (CORS), there is no proxy in nginx.
 
-This is the full FPV Track Designer editor. The **Track Teilen** button serializes the current track and creates a share URL that points to the viewer domain.
-In local development, the editor calls `/api/shorten-track`; Vite proxies that same-origin request to the n8n webhook so localhost is not blocked by browser CORS preflight checks. In the Docker-based production editor, nginx proxies the same `/api/shorten-track` path to n8n so the browser never performs a cross-origin request. If you bypass the nginx proxy and call n8n directly, the webhook must return CORS headers for the deployed editor origin, for example `https://trackdesigner.fpvooe.com`.
-The proxy targets n8n's production webhook path `/webhook/shorten-track`. Do not use `/webhook-test/shorten-track` for deployed traffic because n8n test webhooks only work while the workflow is in test execution mode.
+**Track Teilen** always builds the inline link `https://sharedtrack.fpvooe.com/#c.<compressed-compact-track>`. In the background it posts the compact track to `POST /api/shares` and shows the short link `https://sharedtrack.fpvooe.com/s/<id>`. If PocketBase is unreachable or rate-limited, the dialog says so and the long link stays usable.
 
 ## Viewer service
 
-- Domain: `sharedtrack.fpvooe.com`
-- Build command: `npm run build:viewer`
-- Publish directory: `dist-viewer/`
+- Dockerfile: `Dockerfile.viewer` (builds the single-file viewer with `npm run build:viewer`, serves it with `nginx.viewer.conf`).
+- The nginx config has an SPA fallback (`try_files $uri /index.html`), so `/s/<id>` and `/t/<namespace>…` return the viewer. A plain static publish of `dist-viewer/` without that fallback only works for `#c.` links.
 
-If Nixpacks selects an unsupported Node patch version, deploy the viewer with `Dockerfile.viewer` instead. The viewer Dockerfile builds with the official `node:24-alpine` image, installs optional native dependencies on Linux, and serves `dist-viewer/` with nginx on port `80`.
-
-This service serves the view-only build from `dist-viewer/index.html` at the domain root. It reads the encoded track data from the URL fragment:
+Viewer URLs:
 
 ```text
-https://sharedtrack.fpvooe.com/#c.<compressed-compact-track>
+https://sharedtrack.fpvooe.com/#c.<compressed-compact-track>   inline, no server needed
+https://sharedtrack.fpvooe.com/s/<id>                           short link
+https://sharedtrack.fpvooe.com/t/fpv-linz                       collection overview
+https://sharedtrack.fpvooe.com/t/fpv-linz:latest                entry behind a label
+https://sharedtrack.fpvooe.com/t/fpv-linz@<entryId>             one entry
 ```
 
-New links use the compact `c.` format (`src/core/schemas/compactTrack.schema.ts`, about 200 characters for 11 gates). Older `z.` links and prefix-less base64url links still open. The fragment is decoded in the browser, so track data is not sent to the server as part of the HTTP request.
+`#c.` links never reach a server; older `z.` and prefix-less base64url links still open.
 
-## Repository setup
+## PocketBase service
 
-Both Coolify services can point to the same GitHub repository and branch. Configure each service with its own build command and publish directory:
+- Build context `pocketbase/`, Dockerfile `pocketbase/Dockerfile`. The image pins the PocketBase version, verifies the release checksum and copies `pb_migrations/` and `pb_hooks/`.
+- **Persistent volume** at `/pb/pb_data` (SQLite database, uploaded thumbnails, backups). Without it every deploy starts empty.
+- Port `8090`, own domain (e.g. `pb.fpvooe.com`).
+- Environment variable `PB_ORIGINS=https://trackdesigner.fpvooe.com,https://sharedtrack.fpvooe.com` restricts CORS to editor and viewer. Empty allows every origin (local development only).
+- Migrations run automatically on start (`serve` applies pending migrations).
 
-| Service | Domain | Build command | Publish directory |
-| --- | --- | --- | --- |
-| Editor | `trackdesigner.fpvooe.com` | `Dockerfile` | nginx on port `80` |
-| Viewer | `sharedtrack.fpvooe.com` | `npm run build:viewer` | `dist-viewer/` |
+After the first deploy:
 
-For the Docker-based editor deployment, set Coolify to use `Dockerfile` and expose port `80` so `/api/shorten-track` is proxied by nginx. For the Docker-based viewer deployment, set Coolify to use `Dockerfile.viewer` and expose port `80` instead of configuring Nixpacks build/start commands.
+1. Open `https://pb.fpvooe.com/_/` and create the superuser (the install link is printed in the container log).
+2. **Settings → Mail settings**: configure SMTP so password resets and verification mails work.
+3. Optional: **Collections → users → Options → OAuth2** to enable Google, Discord, … The editor shows only providers the server reports.
+4. Check **Settings → Backups**: the migration enables daily backups at 02:00 (14 kept). Configure S3 there if backups should leave the server.
+
+Settings applied by migration (`pocketbase/pb_migrations/1791590401_configure_settings.js`):
+
+- Rate limiting on, incl. `POST /api/shares` at 30 requests per hour per IP.
+- Client IP from the rightmost `X-Forwarded-For` value (set by Coolify's Traefik). PocketBase must only be reachable through the proxy, otherwise clients could fake their IP.
+- Daily backups.
+
+Short links are deleted by a daily cron job (03:00) once they have not been opened for 4 months.
+
+## Old `go.fpvooe.com` links
+
+Short links created before the switch point to the n8n workflow `shorten-track`. The app no longer calls n8n, but those links only keep working as long as n8n and its redirect stay online. Decide what happens to them before turning n8n off.
+
+## Local development
+
+```bash
+docker compose up pocketbase   # PocketBase on http://127.0.0.1:8090 (dashboard: /_/)
+npm run dev                    # editor; .env.development points VITE_API_URL at the local instance
+```
+
+To try viewer routes locally: `npx vite build --config vite.config.viewer.ts --mode development && npm run preview:viewer`, then open `http://localhost:4174/s/<id>`.
 
 ## Verification
 
 After deployment:
 
-1. Open `https://trackdesigner.fpvooe.com/`.
-2. Generate or load a track.
-3. Click **Track Teilen**.
-4. Copy the generated URL.
-5. Open the URL and verify it uses `https://sharedtrack.fpvooe.com/#...` without a `/viewer.html` path.
-6. Confirm the viewer renders the track without editor controls such as **Speichern**, **Galerie**, **Einstellungen**, gate handles, or delete actions.
+1. Open `https://trackdesigner.fpvooe.com/`, generate or load a track, click **Track Teilen**.
+2. The dialog shows the long `#c.` link and, after a moment, a `https://sharedtrack.fpvooe.com/s/<id>` short link.
+3. Open both links; the viewer renders the track without editor controls (save, gallery, gate handles, delete).
+4. `curl https://pb.fpvooe.com/api/collections/shares/records` returns 403 (short links cannot be listed).

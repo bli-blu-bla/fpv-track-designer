@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { defaultConfig } from '@/core/defaultConfig'
 import type { Track } from '@/core/types'
 import { createDefaultGateOpenings } from '@/core/gates/gateOpenings'
@@ -8,8 +8,6 @@ import {
   createTrackShareUrl,
   decodeTrackSharePayload,
   encodeTrackSharePayload,
-  getTrackShortenerEndpoint,
-  shortenTrackShareUrl,
 } from './shareTrack'
 
 const createTestTrack = (): Track => ({
@@ -42,11 +40,6 @@ function encodeLegacyBase64Url(value: string): string {
 }
 
 describe('shareTrack helpers', () => {
-  afterEach(() => {
-    vi.useRealTimers()
-    vi.unstubAllGlobals()
-  })
-
   it('round-trips a track through a share URL hash payload', () => {
     const track = createTestTrack()
     const shareUrl = createTrackShareUrl(track, defaultConfig, 'https://sharedtrack.fpvooe.com/')
@@ -115,54 +108,5 @@ describe('shareTrack helpers', () => {
     expect('error' in decoded).toBe(true)
     if (!('error' in decoded)) return
     expect(decoded.errors[0]?.field).toBe('root')
-  })
-
-  it('uses a local proxy endpoint in development to avoid browser CORS', () => {
-    expect(getTrackShortenerEndpoint(true)).toBe('/api/shorten-track')
-  })
-
-  it('uses the n8n endpoint in production by default', () => {
-    expect(getTrackShortenerEndpoint(false)).toBe('https://n8n.fanaticagentic.com/webhook/shorten-track')
-  })
-
-  it('prefers an explicitly configured shortener endpoint', () => {
-    expect(getTrackShortenerEndpoint(true, 'https://example.test/shorten')).toBe('https://example.test/shorten')
-  })
-
-  it('posts long URLs to the track shortener and returns the short URL', async () => {
-    const fetchMock = vi.fn<typeof fetch>().mockResolvedValueOnce(
-      new Response(JSON.stringify({ shortUrl: 'http://go.fpvooe.com/viMbW' }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }),
-    )
-    vi.stubGlobal('fetch', fetchMock)
-
-    const shortUrl = await shortenTrackShareUrl('https://sharedtrack.fpvooe.com/#z.payload', {
-      endpoint: 'https://example.test/shorten-track',
-    })
-
-    expect(shortUrl).toBe('http://go.fpvooe.com/viMbW')
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://example.test/shorten-track',
-      expect.objectContaining({
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ longUrl: 'https://sharedtrack.fpvooe.com/#z.payload' }),
-      }),
-    )
-  })
-
-  it('rejects invalid shortener responses', async () => {
-    vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockResolvedValueOnce(
-      new Response(JSON.stringify({ shortUrl: 'javascript:alert(1)' }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }),
-    ))
-
-    await expect(shortenTrackShareUrl('https://sharedtrack.fpvooe.com/#z.payload')).rejects.toThrow(
-      'valid shortUrl',
-    )
   })
 })

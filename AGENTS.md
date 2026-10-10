@@ -114,14 +114,14 @@ npm run preview        # preview production editor build only
 
 ## NOTES
 - No in-repo GitHub Actions workflows were found.
-- Docker deploys editor and viewer separately; editor nginx proxies `/api/shorten-track`, viewer is static-only.
+- Docker deploys editor, viewer and PocketBase separately; editor and viewer are static nginx images (viewer with SPA fallback for `/s/…` and `/t/…`).
 - Chunk size warning from R3F/Drei bundle is acceptable for MVP.
 - There is no gate barrel; `GATE_COMPONENTS` in `src/scene/gates/gateComponents.ts` is the type -> component map.
 - Runtime libs are `dependencies`; build/test tooling (Vitest, Testing Library) is `devDependencies`. The shadcn CLI is not installed; add components with `npx shadcn@latest add <name>`. `three` is declared explicitly.
 - `shadcn` and `vite-plugin-singlefile` were removed on purpose: both pulled in the unpatched `braces`/`micromatch` advisory. Do not re-add them; `npm audit` should stay at 0.
 - Root has generated QA/build artifacts at times (`qa-*.png`, `dist/`, `dist-viewer/`); keep generated artifacts out of commits unless intentionally requested.
 - Avoid creating visual QA screenshots unless explicitly requested.
-- `docs/coolify-track-sharing.md` documents the two-service Coolify deploy and the n8n short-link proxy.
+- `docs/coolify-track-sharing.md` documents the three-service Coolify deploy (editor, viewer, PocketBase).
 - `src/core/share/qrCode.ts` generates share QR PNG/SVG via `qrcode`; `ShareTrackDialog` previews via `dangerouslySetInnerHTML`.
 - Zod adds ~27 kB to the viewer bundle; `zod/mini` would be smaller if bundle size becomes a concern.
 - No CI workflows exist; build/test/lint are run manually.
