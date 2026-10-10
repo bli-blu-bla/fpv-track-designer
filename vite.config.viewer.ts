@@ -46,7 +46,8 @@ function inlineViewerBundle(): Plugin {
 }
 
 export default defineConfig({
-  base: './',
+  // Root-relative so the favicon resolves on nested routes like /s/<id> and /t/<ns>.
+  base: '/',
   plugins: [react(), tailwindcss(), inlineViewerBundle()],
   resolve: {
     alias: {

@@ -166,4 +166,48 @@ describe('ViewerApp', () => {
 
     expect(await screen.findByText('Viewer-Hilfe')).not.toBeNull()
   })
+
+  it('shows a loading state while a remote track loads', () => {
+    render(<ViewerApp />)
+
+    expect(screen.getByRole('status').textContent).toBe('Track wird geladen …')
+  })
+
+  it('renders a collection overview grouped by event date', () => {
+    const namespace = { id: 'ns0000000000001', slug: 'fpv-linz', name: 'FPV Linz' }
+    const entry = (id: string, name: string, eventDate: string | null, labels: string[] = []) => ({
+      id, name, eventDate, labels, thumbnailUrl: null, updated: '2026-01-01T00:00:00.000Z',
+    })
+    useViewerStore.getState().setCollection({
+      namespace,
+      entries: [
+        entry('entry0000000001', 'Future Race', '2999-01-01T00:00:00.000Z', ['next']),
+        entry('entry0000000002', 'Old Training', '2000-01-01T00:00:00.000Z', ['latest']),
+        entry('entry0000000003', 'Sketch', null),
+      ],
+    })
+
+    render(<ViewerApp />)
+
+    expect(screen.getByRole('heading', { level: 1, name: 'FPV Linz' })).not.toBeNull()
+    expect(screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)).toEqual(['Kommende', 'Vergangene', 'Ohne Datum'])
+    expect(screen.getByRole('link', { name: /Old Training/ }).getAttribute('href')).toBe(`${window.location.origin}/t/fpv-linz@entry0000000002`)
+    expect(screen.getByText('latest')).not.toBeNull()
+    expect(screen.queryByTestId('viewer-scene')).toBeNull()
+  })
+
+  it('shows the collection context above a collection entry', () => {
+    document.cookie = 'fpv-track-viewer-help-seen=true; path=/'
+    useViewerStore.getState().setTrackData(createTestTrack(), defaultConfig, {
+      namespace: { id: 'ns0000000000001', slug: 'fpv-linz', name: 'FPV Linz' },
+      entryName: 'Training 10. Oktober',
+      labels: ['latest'],
+    })
+
+    render(<ViewerApp />)
+
+    expect(screen.getByText('Training 10. Oktober')).not.toBeNull()
+    expect(screen.getByText('latest')).not.toBeNull()
+    expect(screen.getByRole('link', { name: 'Alle Tracks von FPV Linz' }).getAttribute('href')).toBe(`${window.location.origin}/t/fpv-linz`)
+  })
 })

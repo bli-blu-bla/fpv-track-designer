@@ -6,16 +6,20 @@
 const DEFAULT_TIMEOUT_MS = 8000
 
 export type ApiErrorKind = 'not-found' | 'bad-request' | 'rate-limited' | 'server' | 'network' | 'not-configured'
+/** Which lookup failed for `not-found` errors raised by the client itself. */
+export type ApiResource = 'share' | 'namespace' | 'entry' | 'label'
 
 export class ApiError extends Error {
   readonly status: number
   readonly kind: ApiErrorKind
+  readonly resource: ApiResource | null
 
-  constructor(kind: ApiErrorKind, status: number, message: string) {
+  constructor(kind: ApiErrorKind, status: number, message: string, resource: ApiResource | null = null) {
     super(message)
     this.name = 'ApiError'
     this.kind = kind
     this.status = status
+    this.resource = resource
   }
 }
 

@@ -15,7 +15,7 @@ export async function createShare(payload: string, options: ApiOptions = {}): Pr
 
 /** Loads the raw compact payload; callers decode it with `decodeCompactTrack()`. */
 export async function getShare(id: string, options: ApiOptions = {}): Promise<{ payload: string }> {
-  if (!SHARE_ID_PATTERN.test(id)) throw new ApiError('not-found', 404, 'Unknown share id')
+  if (!SHARE_ID_PATTERN.test(id)) throw new ApiError('not-found', 404, 'Unknown share id', 'share')
 
   const body = await requestJson(`/api/shares/${id}`, options)
   if (!isRecord(body)) throw new ApiError('server', 200, 'API response is not an object')

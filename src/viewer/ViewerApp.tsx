@@ -6,6 +6,9 @@ import { serializeTrack } from '@/core/schemas/track.schema'
 import { useViewerStore } from './store'
 import { useTranslation } from '@/i18n'
 import { ViewerHelpDialog } from './ViewerHelpDialog'
+import { LabelChips, ViewerCollection } from './ViewerCollection'
+import { buildCollectionUrl } from '@/core/share/viewerRoute'
+import type { ViewerEntryContext } from './store'
 
 const VIEWER_HELP_COOKIE = 'fpv-track-viewer-help-seen'
 const VIEWER_HELP_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
@@ -24,6 +27,27 @@ function setViewerHelpCookie() {
   document.cookie = `${VIEWER_HELP_COOKIE}=true; max-age=${VIEWER_HELP_COOKIE_MAX_AGE}; path=/; SameSite=Lax`
 }
 
+function EntryContextBar({ context }: { context: ViewerEntryContext }) {
+  const { t } = useTranslation()
+
+  return (
+    <div className="absolute top-3 left-3 flex max-w-[calc(100%-12rem)] flex-col gap-1.5 rounded-xl border border-white/15 bg-black/35 px-3 py-2 text-white backdrop-blur">
+      <p className="truncate text-sm">
+        <span className="text-white/60">{context.namespace.name}</span>
+        <span className="px-1.5 text-white/40">/</span>
+        <span className="font-medium">{context.entryName}</span>
+      </p>
+      <LabelChips labels={context.labels} />
+      <a
+        href={buildCollectionUrl(context.namespace.slug, window.location.origin)}
+        className="text-xs text-sky-300 hover:text-sky-200 hover:underline"
+      >
+        {t('collectionAllTracks', { name: context.namespace.name })}
+      </a>
+    </div>
+  )
+}
+
 function createTrackFileName(trackName: string): string {
   return `${trackName.replace(/\s+/g, '-').toLowerCase()}.json`
 }
@@ -33,6 +57,9 @@ export function ViewerApp() {
   const track = useViewerStore((state) => state.track)
   const config = useViewerStore((state) => state.config)
   const error = useViewerStore((state) => state.error)
+  const status = useViewerStore((state) => state.status)
+  const collection = useViewerStore((state) => state.collection)
+  const entryContext = useViewerStore((state) => state.entryContext)
   const [helpOpen, setHelpOpen] = useState(false)
   const [fpvModeActive, setFpvModeActive] = useState(false)
 
@@ -70,10 +97,12 @@ export function ViewerApp() {
     )
   }
 
+  if (collection) return <ViewerCollection collection={collection} />
+
   if (!track || !config) {
     return (
       <main className="flex min-h-dvh items-center justify-center bg-slate-950 p-6 text-slate-100">
-        <p>{t('noTrackLoaded')}</p>
+        <p role="status">{status === 'loading' ? t('viewerLoading') : t('noTrackLoaded')}</p>
       </main>
     )
   }
@@ -99,6 +128,7 @@ export function ViewerApp() {
         fpvModeActive={fpvModeActive}
         onFpvComplete={() => setFpvModeActive(false)}
       />
+      {entryContext && !fpvModeActive && <EntryContextBar context={entryContext} />}
       <div className="absolute top-3 right-3 flex gap-2">
         <Button
           type="button"

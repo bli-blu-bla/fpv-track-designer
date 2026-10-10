@@ -1,4 +1,4 @@
-import { ApiError, isRecord, readString, requestJson, resolveBaseUrl, type ApiOptions } from './http'
+import { ApiError, isRecord, readString, requestJson, resolveBaseUrl, type ApiOptions, type ApiResource } from './http'
 
 /** Mirrors the field patterns in pocketbase/pb_migrations. */
 export const NAMESPACE_SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$/
@@ -34,8 +34,8 @@ export function toIsoDate(value: unknown): string | null {
   return typeof value === 'string' && value !== '' ? value.replace(' ', 'T') : null
 }
 
-function notFound(what: string): ApiError {
-  return new ApiError('not-found', 404, `${what} not found`)
+function notFound(resource: ApiResource): ApiError {
+  return new ApiError('not-found', 404, `${resource} not found`, resource)
 }
 
 function query(params: Record<string, string>): string {
@@ -77,20 +77,21 @@ async function listLabels(filter: string, options: ApiOptions): Promise<{ name: 
 }
 
 export async function getNamespace(slug: string, options: ApiOptions = {}): Promise<NamespaceSummary> {
-  if (!NAMESPACE_SLUG_PATTERN.test(slug)) throw notFound('Namespace')
+  if (!NAMESPACE_SLUG_PATTERN.test(slug)) throw notFound('namespace')
 
   const body = await requestJson(
     `/api/collections/namespaces/records?${query({ filter: `slug='${slug}'`, perPage: '1', skipTotal: '1', fields: 'id,slug,name' })}`,
     options,
   )
   const [record] = readItems(body)
-  if (!record) throw notFound('Namespace')
+  if (!record) throw notFound('namespace')
   return toNamespace(record)
 }
 
-export async function listEntries(namespaceSlug: string, options: ApiOptions = {}): Promise<EntrySummary[]> {
+/** Accepts a slug or an already loaded namespace (saves one request). */
+export async function listEntries(namespaceOrSlug: string | NamespaceSummary, options: ApiOptions = {}): Promise<EntrySummary[]> {
   const baseUrl = resolveBaseUrl(options)
-  const namespace = await getNamespace(namespaceSlug, options)
+  const namespace = typeof namespaceOrSlug === 'string' ? await getNamespace(namespaceOrSlug, options) : namespaceOrSlug
   const [entriesBody, labels] = await Promise.all([
     requestJson(
       `/api/collections/entries/records?${query({
@@ -114,7 +115,7 @@ export async function listEntries(namespaceSlug: string, options: ApiOptions = {
 async function loadEntry(namespace: NamespaceSummary, entryId: string, options: ApiOptions): Promise<EntryDetail> {
   const baseUrl = resolveBaseUrl(options)
   const record = await requestJson(`/api/collections/entries/records/${entryId}`, options)
-  if (!isRecord(record) || record.namespace !== namespace.id) throw notFound('Entry')
+  if (!isRecord(record) || record.namespace !== namespace.id) throw notFound('entry')
 
   const labels = await listLabels(`entry='${entryId}'`, options)
   return {
@@ -125,15 +126,15 @@ async function loadEntry(namespace: NamespaceSummary, entryId: string, options: 
 }
 
 export async function getEntry(namespaceSlug: string, entryId: string, options: ApiOptions = {}): Promise<EntryDetail> {
-  if (!RECORD_ID_PATTERN.test(entryId)) throw notFound('Entry')
+  if (!RECORD_ID_PATTERN.test(entryId)) throw notFound('entry')
   return loadEntry(await getNamespace(namespaceSlug, options), entryId, options)
 }
 
 export async function getEntryByLabel(namespaceSlug: string, label: string, options: ApiOptions = {}): Promise<EntryDetail> {
-  if (!LABEL_NAME_PATTERN.test(label)) throw notFound('Label')
+  if (!LABEL_NAME_PATTERN.test(label)) throw notFound('label')
 
   const namespace = await getNamespace(namespaceSlug, options)
   const [match] = await listLabels(`namespace='${namespace.id}' && name='${label}'`, options)
-  if (!match) throw notFound('Label')
+  if (!match) throw notFound('label')
   return loadEntry(namespace, match.entry, options)
 }

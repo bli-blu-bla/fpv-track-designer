@@ -27,7 +27,9 @@ describe('useViewerStore', () => {
     useViewerStore.getState().reset()
   })
 
-  it('starts without track data or errors', () => {
+  it('starts loading without track data or errors', () => {
+    expect(useViewerStore.getState().status).toBe('loading')
+    expect(useViewerStore.getState().collection).toBeNull()
     expect(useViewerStore.getState().track).toBeNull()
     expect(useViewerStore.getState().config).toBeNull()
     expect(useViewerStore.getState().error).toBeNull()
@@ -38,6 +40,7 @@ describe('useViewerStore', () => {
 
     useViewerStore.getState().setTrackData(track, defaultConfig)
 
+    expect(useViewerStore.getState().status).toBe('ready')
     expect(useViewerStore.getState().track?.id).toBe('viewer-track')
     expect(useViewerStore.getState().config?.fieldSize).toEqual(defaultConfig.fieldSize)
     expect(useViewerStore.getState().error).toBeNull()
@@ -51,6 +54,7 @@ describe('useViewerStore', () => {
     expect(useViewerStore.getState().track).toBeNull()
     expect(useViewerStore.getState().config).toBeNull()
     expect(useViewerStore.getState().error).toBe('Ungültiger Link')
+    expect(useViewerStore.getState().status).toBe('error')
   })
 
   it('does not expose editor mutation actions', () => {
