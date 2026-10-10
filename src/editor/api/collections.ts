@@ -17,9 +17,10 @@ export interface NamespaceLabel {
 }
 
 export interface EntryInput {
-  name: string
-  /** `YYYY-MM-DD` or null to clear. */
-  eventDay: string | null
+  /** Omit to keep the stored name. */
+  name?: string
+  /** `YYYY-MM-DD`, null to clear, omit to keep. */
+  eventDay?: string | null
   /** Export object; omit to keep the stored track data. */
   data?: unknown
   /** JPEG data URL; omit to keep the stored preview. */
@@ -54,8 +55,8 @@ async function run<T>(action: () => Promise<T>): Promise<T> {
 
 function toEntryForm(input: EntryInput): FormData {
   const form = new FormData()
-  form.append('name', input.name.trim().slice(0, MAX_NAME_LENGTH))
-  form.append('eventDate', input.eventDay ? `${input.eventDay} 00:00:00.000Z` : '')
+  if (input.name !== undefined) form.append('name', input.name.trim().slice(0, MAX_NAME_LENGTH))
+  if (input.eventDay !== undefined) form.append('eventDate', input.eventDay ? `${input.eventDay} 00:00:00.000Z` : '')
   if (input.data !== undefined) form.append('data', JSON.stringify(input.data))
   const thumbnail = input.thumbnail ? dataUrlToBlob(input.thumbnail) : null
   if (thumbnail) form.append('thumbnail', thumbnail, 'thumbnail.jpg')
@@ -71,7 +72,7 @@ export async function listNamespaceLabels(namespaceId: string): Promise<Namespac
   return records.map((record) => ({ id: record.id, name: String(record.name), entryId: String(record.entry) }))
 }
 
-export async function createEntry(namespaceId: string, input: EntryInput & { data: unknown }): Promise<string> {
+export async function createEntry(namespaceId: string, input: EntryInput & { name: string; data: unknown }): Promise<string> {
   const { pb, userId } = requireSession()
   const form = toEntryForm(input)
   form.append('namespace', namespaceId)

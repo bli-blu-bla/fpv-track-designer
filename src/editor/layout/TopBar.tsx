@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils'
 import { useTranslation } from '@/i18n'
 import { PoleCounter } from './PoleCounter'
 import { AccountMenu } from './AccountMenu'
+import { CollectionEntryBadge } from './CollectionEntryBadge'
 
 interface TopBarProps {
   onShortcutsClick: () => void
@@ -33,6 +34,8 @@ interface TopBarProps {
   fpvModeActive: boolean
   fpvDisabled: boolean
   onFpvToggle: () => void
+  /** Preview for pushing edits back to a collection entry. */
+  captureThumbnail?: () => string | null
 }
 
 function Divider() {
@@ -117,7 +120,7 @@ function TrackNameInput() {
   )
 }
 
-export const TopBar: FC<TopBarProps> = ({ onShortcutsClick, onShuffle, fpvModeActive, fpvDisabled, onFpvToggle }) => {
+export const TopBar: FC<TopBarProps> = ({ onShortcutsClick, onShuffle, fpvModeActive, fpvDisabled, onFpvToggle, captureThumbnail }) => {
   const { language, t, toggleLanguage } = useTranslation()
   const canUndo = useAppStore((state) => state.past.length > 0)
   const canRedo = useAppStore((state) => state.future.length > 0)
@@ -208,6 +211,7 @@ export const TopBar: FC<TopBarProps> = ({ onShortcutsClick, onShuffle, fpvModeAc
 
       <div className="flex min-w-0 shrink items-center gap-2 overflow-hidden">
         {currentTrack && <TrackNameInput />}
+        <CollectionEntryBadge captureThumbnail={captureThumbnail} />
         <a
           href="https://fpvooe.com/"
           target="_blank"

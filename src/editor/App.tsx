@@ -231,6 +231,7 @@ function App() {
           fpvModeActive={fpvModeActive}
           fpvDisabled={!currentTrack || currentTrack.gates.length < 2}
           onFpvToggle={() => setFpvModeActive((active) => !active)}
+          captureThumbnail={captureThumbnail}
         />
         <div className="flex min-h-0 flex-1">
           <ToolRail

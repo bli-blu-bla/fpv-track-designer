@@ -6,6 +6,7 @@ import { createDefaultGateOpenings } from '@/core/gates/gateOpenings'
 import type { EntrySummary } from '@/core/api/collections'
 import type { Track } from '@/core/types'
 import { useAppStore } from '@/editor/store'
+import { serializeTrack } from '@/core/schemas/track.schema'
 import { ToolRail } from '@/editor/layout/ToolRail'
 import { CollectionsPanel } from './CollectionsPanel'
 
@@ -150,5 +151,19 @@ describe('CollectionsPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Verschieben' }))
     await waitFor(() => expect(editorApi.moveLabel).toHaveBeenCalledWith('label-race', 'entry-new000000'))
     expect(editorApi.createEntry).toHaveBeenCalledTimes(1)
+  })
+
+  it('loads an entry into the editor under the entry name and links it', async () => {
+    coreApi.getEntry.mockResolvedValue({ ...OLD, namespace: NAMESPACE, data: JSON.parse(serializeTrack({ ...track, name: 'Old Track Name' }, defaultConfig)) })
+    render(<CollectionsPanel />)
+
+    fireEvent.click(await screen.findByRole('button', { name: /Training 3. Okt/ }))
+    fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'In Editor laden' }))
+
+    await waitFor(() => expect(useAppStore.getState().currentTrack?.name).toBe('Training 3. Okt'))
+    const { currentTrack, collectionEntryLink } = useAppStore.getState()
+    expect(currentTrack?.id).not.toBe(track.id)
+    expect(collectionEntryLink).toMatchObject({ namespace: NAMESPACE, entryId: OLD.id, entryName: 'Training 3. Okt', trackId: currentTrack?.id })
+    expect(collectionEntryLink?.publishedUpdatedAt).toBe(currentTrack?.updatedAt)
   })
 })

@@ -56,6 +56,7 @@ function EntryDialogContent({ onOpenChange, namespace, entry, entries, captureTh
   const replaceTrack = useAppStore((state) => state.replaceTrack)
   const setConfig = useAppStore((state) => state.setConfig)
   const requestDestructiveAction = useAppStore((state) => state.requestDestructiveAction)
+  const setCollectionEntryLink = useAppStore((state) => state.setCollectionEntryLink)
 
   const [name, setName] = useState(() => initialName(entry, currentTrack?.name))
   const [eventDay, setEventDay] = useState(entry?.eventDate?.slice(0, 10) ?? '')
@@ -170,9 +171,18 @@ function EntryDialogContent({ onOpenChange, namespace, entry, entries, captureTh
         const detail = await getEntry(namespace.slug, entry.id)
         const result = parseTrackExport(detail.data)
         if ('error' in result) throw new Error(result.error)
-        // A new id keeps the copy apart from the publisher's personal track with the same id.
+        // A new id keeps the copy apart from the publisher's personal track with the same id;
+        // the entry name makes it obvious in the TopBar which entry is being edited.
+        const trackId = crypto.randomUUID()
         setConfig(result.config)
-        replaceTrack({ ...result.track, id: crypto.randomUUID() })
+        replaceTrack({ ...result.track, id: trackId, name: entry.name })
+        setCollectionEntryLink({
+          namespace,
+          entryId: entry.id,
+          entryName: entry.name,
+          trackId,
+          publishedUpdatedAt: useAppStore.getState().currentTrack?.updatedAt ?? '',
+        })
         onOpenChange(false)
       })
     })
