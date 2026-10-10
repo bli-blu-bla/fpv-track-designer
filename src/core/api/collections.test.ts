@@ -78,6 +78,7 @@ describe('collections API', () => {
         eventDate: '2026-10-10T00:00:00.000Z',
         labels: ['10-okt-2026', 'latest'],
         thumbnailUrl: `https://pb.test/api/files/entries/${ENTRY_ID}/thumb_abc.jpg`,
+        sketchData: null,
         updated: '2026-10-09T12:00:00.000Z',
       },
       {
@@ -86,10 +87,16 @@ describe('collections API', () => {
         eventDate: null,
         labels: [],
         thumbnailUrl: null,
+        sketchData: TRACK_DATA,
         updated: '2026-10-09T12:00:00.000Z',
       },
     ])
-    expect(queryOf(fetchMock, '/api/collections/entries/').get('filter')).toBe(`namespace='${NAMESPACE.id}'`)
+    const entryFilters = fetchMock.mock.calls
+      .map(([input]) => String(input))
+      .filter((url) => url.includes('/api/collections/entries/'))
+      .map((url) => new URL(url).searchParams.get('filter'))
+    // Track data is only requested for entries without a thumbnail.
+    expect(entryFilters).toEqual([`namespace='${NAMESPACE.id}'`, `namespace='${NAMESPACE.id}' && thumbnail=''`])
   })
 
   it('loads an entry with raw data and namespace', async () => {

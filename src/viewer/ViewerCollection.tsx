@@ -1,4 +1,5 @@
 import { buildEntryUrl } from '@/core/share/viewerRoute'
+import { TrackSketch } from '@/components/TrackSketch'
 import type { EntrySummary } from '@/core/api/collections'
 import { useTranslation, type TranslationKey } from '@/i18n'
 import { formatEventDay, groupCollectionEntries } from './collectionSections'
@@ -30,6 +31,8 @@ function EntryCard({ entry, namespace }: { entry: EntrySummary; namespace: strin
         <div className="aspect-[8/5] bg-slate-900">
           {entry.thumbnailUrl ? (
             <img src={entry.thumbnailUrl} alt="" loading="lazy" className="size-full object-cover" />
+          ) : entry.sketchData ? (
+            <TrackSketch data={entry.sketchData} className="size-full" />
           ) : (
             <div className="flex size-full items-center justify-center text-xs text-slate-500">{t('collectionNoPreview')}</div>
           )}
@@ -57,7 +60,7 @@ export function ViewerCollection({ collection }: { collection: ViewerCollectionD
   ] as const satisfies readonly (readonly [TranslationKey, EntrySummary[]])[]).filter(([, items]) => items.length > 0)
 
   return (
-    <main className="min-h-dvh bg-slate-950 px-6 py-10 text-slate-100">
+    <main className="h-dvh overflow-y-auto bg-slate-950 px-6 py-10 text-slate-100">
       <div className="mx-auto flex max-w-5xl flex-col gap-8">
         <header>
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-300">FPV Track Viewer</p>

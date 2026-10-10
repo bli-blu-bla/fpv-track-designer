@@ -20,6 +20,8 @@ export interface EntrySummary {
   eventDate: string | null
   labels: string[]
   thumbnailUrl: string | null
+  /** Raw export object, only for entries without a thumbnail (lets the UI draw a sketch instead). */
+  sketchData: unknown
   updated: string
 }
 
@@ -56,14 +58,16 @@ export function getFileUrl(baseUrl: string, collection: string, recordId: string
   return `${baseUrl}/api/files/${collection}/${recordId}/${encodeURIComponent(filename)}`
 }
 
-function toEntrySummary(record: Record<string, unknown>, labels: string[], baseUrl: string): EntrySummary {
+function toEntrySummary(record: Record<string, unknown>, labels: string[], baseUrl: string, sketchData: unknown = null): EntrySummary {
   const id = readString(record, 'id')
+  const thumbnailUrl = getFileUrl(baseUrl, 'entries', id, record.thumbnail)
   return {
     id,
     name: readString(record, 'name'),
     eventDate: toIsoDate(record.eventDate),
     labels: [...labels].sort(),
-    thumbnailUrl: getFileUrl(baseUrl, 'entries', id, record.thumbnail),
+    thumbnailUrl,
+    sketchData: thumbnailUrl ? null : sketchData,
     updated: toIsoDate(record.updated) ?? '',
   }
 }
@@ -92,7 +96,7 @@ export async function getNamespace(slug: string, options: ApiOptions = {}): Prom
 export async function listEntries(namespaceOrSlug: string | NamespaceSummary, options: ApiOptions = {}): Promise<EntrySummary[]> {
   const baseUrl = resolveBaseUrl(options)
   const namespace = typeof namespaceOrSlug === 'string' ? await getNamespace(namespaceOrSlug, options) : namespaceOrSlug
-  const [entriesBody, labels] = await Promise.all([
+  const [entriesBody, labels, sketchBody] = await Promise.all([
     requestJson(
       `/api/collections/entries/records?${query({
         filter: `namespace='${namespace.id}'`,
@@ -104,11 +108,22 @@ export async function listEntries(namespaceOrSlug: string | NamespaceSummary, op
       options,
     ),
     listLabels(`namespace='${namespace.id}'`, options),
+    // Track data only where no preview image exists, to keep the list small.
+    requestJson(
+      `/api/collections/entries/records?${query({
+        filter: `namespace='${namespace.id}' && thumbnail=''`,
+        perPage: String(MAX_PAGE_SIZE),
+        skipTotal: '1',
+        fields: 'id,data',
+      })}`,
+      options,
+    ),
   ])
+  const sketchData = new Map(readItems(sketchBody).map((record) => [readString(record, 'id'), record.data]))
 
   return readItems(entriesBody).map((record) => {
     const id = readString(record, 'id')
-    return toEntrySummary(record, labels.filter((label) => label.entry === id).map((label) => label.name), baseUrl)
+    return toEntrySummary(record, labels.filter((label) => label.entry === id).map((label) => label.name), baseUrl, sketchData.get(id))
   })
 }
 
@@ -119,7 +134,7 @@ async function loadEntry(namespace: NamespaceSummary, entryId: string, options: 
 
   const labels = await listLabels(`entry='${entryId}'`, options)
   return {
-    ...toEntrySummary(record, labels.map((label) => label.name), baseUrl),
+    ...toEntrySummary(record, labels.map((label) => label.name), baseUrl, record.data),
     namespace,
     data: record.data,
   }

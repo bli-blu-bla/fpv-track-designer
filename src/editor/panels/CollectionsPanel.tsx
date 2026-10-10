@@ -4,6 +4,7 @@ import { useAppStore } from '@/editor/store'
 import { listEntries, type EntrySummary } from '@/core/api/collections'
 import { buildCollectionUrl } from '@/core/share/viewerRoute'
 import { Button } from '@/components/ui/button'
+import { TrackSketch } from '@/components/TrackSketch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useTranslation } from '@/i18n'
 import { CollectionEntryDialog } from './CollectionEntryDialog'
@@ -97,6 +98,8 @@ export function CollectionsPanel({ captureThumbnail }: CollectionsPanelProps) {
             >
               {entry.thumbnailUrl ? (
                 <img src={entry.thumbnailUrl} alt="" className="aspect-[16/10] w-16 shrink-0 rounded bg-muted object-cover" />
+              ) : entry.sketchData ? (
+                <TrackSketch data={entry.sketchData} className="aspect-[16/10] w-16 shrink-0 rounded" />
               ) : (
                 <span className="flex aspect-[16/10] w-16 shrink-0 items-center justify-center rounded bg-muted">
                   <ImageOff className="size-4 text-subtle-foreground" />

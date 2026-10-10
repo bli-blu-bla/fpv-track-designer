@@ -35,7 +35,7 @@ const track: Track = {
 }
 
 const entry = (id: string, name: string, labels: string[] = []): EntrySummary => ({
-  id, name, labels, eventDate: '2026-10-03T00:00:00.000Z', thumbnailUrl: null, updated: '2026-10-03T00:00:00.000Z',
+  id, name, labels, eventDate: '2026-10-03T00:00:00.000Z', thumbnailUrl: null, sketchData: null, updated: '2026-10-03T00:00:00.000Z',
 })
 
 const OLD = entry('entry-old000000', 'Training 3. Okt', ['latest'])

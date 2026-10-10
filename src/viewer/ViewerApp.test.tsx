@@ -176,7 +176,7 @@ describe('ViewerApp', () => {
   it('renders a collection overview grouped by event date', () => {
     const namespace = { id: 'ns0000000000001', slug: 'fpv-linz', name: 'FPV Linz' }
     const entry = (id: string, name: string, eventDate: string | null, labels: string[] = []) => ({
-      id, name, eventDate, labels, thumbnailUrl: null, updated: '2026-01-01T00:00:00.000Z',
+      id, name, eventDate, labels, thumbnailUrl: null, sketchData: null, updated: '2026-01-01T00:00:00.000Z',
     })
     useViewerStore.getState().setCollection({
       namespace,

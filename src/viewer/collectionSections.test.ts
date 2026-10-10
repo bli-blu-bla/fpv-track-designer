@@ -8,6 +8,7 @@ const entry = (id: string, eventDate: string | null): EntrySummary => ({
   eventDate,
   labels: [],
   thumbnailUrl: null,
+  sketchData: null,
   updated: '2026-10-01T00:00:00.000Z',
 })
 
