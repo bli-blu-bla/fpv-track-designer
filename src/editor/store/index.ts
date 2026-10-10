@@ -1,5 +1,6 @@
 import { create, type StateCreator } from 'zustand'
 import { devtools } from 'zustand/middleware'
+import { createAccountSlice } from './accountSlice'
 import { createConfigSlice } from './configSlice'
 import { createEditorUiSlice } from './editorUiSlice'
 import { createSelectionSlice } from './selectionSlice'
@@ -15,6 +16,7 @@ const createAppState: StateCreator<AppState> = (...args) => ({
   ...createSelectionSlice(...args),
   ...createEditorUiSlice(...args),
   ...createUnsavedChangesSlice(...args),
+  ...createAccountSlice(...args),
 })
 
 /** Fresh, isolated editor store without devtools (tests). */

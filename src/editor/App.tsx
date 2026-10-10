@@ -124,6 +124,9 @@ function App() {
     }
   }, [currentTrack, setTrack])
 
+  // Restore and validate a stored account session (no-op without VITE_API_URL). Cleanup keeps StrictMode idempotent.
+  useEffect(() => useAppStore.getState().initAccount(), [])
+
   // Show help once for first-time visitors.
   useEffect(() => {
     if (hasFirstVisitCookie()) return

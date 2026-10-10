@@ -22,6 +22,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/i18n'
 import { PoleCounter } from './PoleCounter'
+import { AccountMenu } from './AccountMenu'
 
 interface TopBarProps {
   onShortcutsClick: () => void
@@ -249,6 +250,8 @@ export const TopBar: FC<TopBarProps> = ({ onShortcutsClick, onShuffle, fpvModeAc
       <HeaderIconButton label={t('help')} onClick={onShortcutsClick}>
         <CircleHelp />
       </HeaderIconButton>
+
+      <AccountMenu />
 
       <Tooltip>
         <TooltipTrigger asChild>
