@@ -1,5 +1,5 @@
 services:
-  fpv-track-designer:
+  designer:
     build:
       context: .
       args:
