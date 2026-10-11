@@ -23,7 +23,12 @@ function inlineViewerBundle(): Plugin {
         const name = escapeRegExp(fileName)
 
         if (output.type === 'chunk' && fileName.endsWith('.js')) {
-          const code = output.code.replace(/<(\/script>|!--)/g, '\\x3C$1').trim()
+          // Dynamic imports (lazy NightBloom) are inlined, so Vite never fills in their preload
+          // list; the leftover marker would throw on night tracks. `void 0` = nothing to preload.
+          const code = output.code
+            .replace(/\b__VITE_PRELOAD__\b/g, 'void 0')
+            .replace(/<(\/script>|!--)/g, '\\x3C$1')
+            .trim()
           html = html.replace(
             new RegExp(`<script([^>]*?) src="(?:[^"]*?/)?${name}"([^>]*)></script>`),
             (_match, before: string, after: string) => `<script${before}${after}>${code}</script>`,
