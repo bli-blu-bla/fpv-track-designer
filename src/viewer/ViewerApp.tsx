@@ -127,6 +127,7 @@ export function ViewerApp() {
         config={config}
         fpvModeActive={fpvModeActive}
         onFpvComplete={() => setFpvModeActive(false)}
+        showBots
       />
       {entryContext && !fpvModeActive && <EntryContextBar context={entryContext} />}
       <div className="absolute top-3 right-3 flex gap-2">

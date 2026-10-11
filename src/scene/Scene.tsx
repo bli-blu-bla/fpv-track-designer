@@ -18,6 +18,7 @@ import { CameraViewController, type SceneViewMode } from './CameraViewController
 import { SceneSnapshot, type SceneSnapshotApi } from './SceneSnapshot'
 import { SkyDome } from './SkyDome'
 import { FpvFlyThrough } from './FpvFlyThrough'
+import { TrackBots } from './TrackBots'
 import type { Config, Track } from '@/core/types'
 import { calculateFlightPath } from '@/core/track/flightPath'
 
@@ -36,13 +37,15 @@ interface SceneProps {
   viewResetToken?: number
   /** Receives a capture function for preview images (null on unmount). Must be stable. */
   onSnapshotReady?: (api: SceneSnapshotApi | null) => void
+  /** Decorative drones looping the flight path (hidden during FPV). */
+  showBots?: boolean
 }
 
 /**
  * The single R3F Canvas for editor and viewer. Renders whatever track/config it
  * is given and never reads an app store, so it stays usable read-only.
  */
-export function Scene({ track: currentTrack, config, gateComponent: GateView = Gate, onGroundClick, fpvModeActive = false, onFpvComplete, viewMode = 'perspective', viewResetToken = 0, onSnapshotReady }: SceneProps) {
+export function Scene({ track: currentTrack, config, gateComponent: GateView = Gate, onGroundClick, fpvModeActive = false, onFpvComplete, viewMode = 'perspective', viewResetToken = 0, onSnapshotReady, showBots = false }: SceneProps) {
   const controlsRef = useRef<OrbitControlsImpl>(null)
   const theme = getSceneLook(config)
   const flightPath = useMemo(() => {
@@ -137,6 +140,7 @@ export function Scene({ track: currentTrack, config, gateComponent: GateView = G
         />
       ))}
       {config.showFlightPath && <FlightPath gates={currentTrack.gates} gateSequence={currentTrack.gateSequence} />}
+      {showBots && !fpvModeActive && flightPath && <TrackBots points={flightPath.sampledPoints} />}
     </>
   ) : null
 

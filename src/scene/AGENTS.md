@@ -5,7 +5,7 @@
 ## STRUCTURE
 ```
 scene/
-├── Scene.tsx              # Single Canvas owner; props: track, config, gateComponent?, onGroundClick?, fpv flags, viewMode?, viewResetToken?, onSnapshotReady?
+├── Scene.tsx              # Single Canvas owner; props: track, config, gateComponent?, onGroundClick?, fpv flags, viewMode?, viewResetToken?, onSnapshotReady?, showBots?
 ├── CameraViewController.tsx # 3D/top camera presets; renders before SmoothZoom so the zoom distance resyncs
 ├── SceneSnapshot.tsx      # capture(): renders one frame from a fixed overview camera → 320×200 JPEG (gallery previews)
 ├── SceneTheme.tsx         # SceneThemeContext + useSceneTheme(); provided inside the Canvas
@@ -15,6 +15,8 @@ scene/
 ├── CourtMarkings.tsx      # gym court lines scaled to the field (handball court, centre circle, spot)
 ├── FlightPath.tsx         # One native THREE.Line per sampled segment + arrows
 ├── FpvFlyThrough.tsx      # Automated first-person flight along sampled path
+├── TrackBots.tsx          # Decorative drones looping the sampled path (`showBots`, viewer only; hidden during FPV)
+├── flightRoute.ts         # createRoute()/sampleRoute(): arc-length sampling shared by FPV and bots
 ├── NightBloom.tsx         # Bloom postprocessing, lazy-loaded for the night sky
 ├── SkyDome.tsx            # Shader sky dome
 ├── CameraPan.tsx          # Space+left-drag / right-drag pan
