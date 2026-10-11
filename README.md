@@ -2,9 +2,7 @@
 
 Ein desktop-orientierter 3D-Editor zum Entwerfen, Generieren und Speichern von FPV-Drohnen-Rennstrecken direkt im Browser.
 
-Das Projekt kombiniert eine interaktive React-Oberfläche mit einer Three.js/R3F-Szene. Strecken können automatisch generiert, über einzelne Gates feinjustiert und lokal als JSON-ähnliche Track-Daten gespeichert werden.
-
-[![FPV Track Designer Screenshot](public/screenshot.png)](public/screenshot.png)
+Das Projekt kombiniert eine interaktive React-Oberfläche mit einer Three.js/R3F-Szene. Strecken können automatisch generiert, über einzelne Gates feinjustiert und lokal als JSON-ähnliche Track-Daten gespeichert werden. Screenshots von Designer, Viewer und Collections stehen [weiter unten](#screenshots).
 
 ## Features
 
@@ -28,6 +26,32 @@ Das Projekt kombiniert eine interaktive React-Oberfläche mit einer Three.js/R3F
 - **Keyboard-Shortcuts** für schnelle Bedienung
 
 Eine ausführliche Anleitung steht in der [Nutzerdokumentation](docs/NUTZERDOKUMENTATION.md).
+
+## Screenshots
+
+Die Screenshots zeigen Testdaten.
+
+### Designer
+
+Gate auswählen und direkt in der Szene oder im Inspector bearbeiten; links die Bibliothek mit allen Gate-Typen.
+
+[![Designer mit ausgewähltem Gate](docs/screenshots/editor.png)](docs/screenshots/editor.png)
+
+### Viewer
+
+Read-only-Ansicht eines geteilten Tracks, hier über das Label `fpv-demo:meisterschaft` geöffnet.
+
+[![Viewer mit geteiltem Track](docs/screenshots/viewer.png)](docs/screenshots/viewer.png)
+
+### Collections
+
+Im Editor (angemeldet) Tracks in eine Collection veröffentlichen und Labels vergeben. Der Badge oben zeigt, welcher Collection-Eintrag gerade bearbeitet wird.
+
+[![Collections-Panel im Editor](docs/screenshots/editor-collections.png)](docs/screenshots/editor-collections.png)
+
+Die Viewer-Übersicht `/t/fpv-demo` listet alle Einträge, getrennt nach kommenden und vergangenen Terminen.
+
+[![Collection-Übersicht im Viewer](docs/screenshots/viewer-collection.png)](docs/screenshots/viewer-collection.png)
 
 ## Tech Stack
 
