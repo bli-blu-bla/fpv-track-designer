@@ -2,8 +2,21 @@ services:
   fpv-track-designer:
     build:
       context: .
+      args:
+        BUILD_MODE: development
+        VITE_VIEWER_DOMAIN: http://localhost:8081
     ports:
       - "8080:80"
+    restart: unless-stopped
+
+  viewer:
+    build:
+      context: .
+      dockerfile: Dockerfile.viewer
+      args:
+        BUILD_MODE: development
+    ports:
+      - "8081:80"
     restart: unless-stopped
 
   pocketbase:

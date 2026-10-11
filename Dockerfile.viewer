@@ -5,7 +5,9 @@ COPY package*.json ./
 RUN npm ci --include=optional
 
 COPY . .
-RUN npm run build:viewer
+# Vite mode selects the .env file: production (.env.production) or development (local PocketBase).
+ARG BUILD_MODE=production
+RUN npm run build:viewer -- --mode "$BUILD_MODE"
 
 FROM nginx:alpine
 COPY --from=build /app/dist-viewer /usr/share/nginx/html
